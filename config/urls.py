@@ -8,6 +8,7 @@ urlpatterns = [
     path('', include('detecciones.urls')),
 ]
 
-# Permitir servir imágenes subidas en modo de desarrollo
+# Permitir servir imágenes subidas y archivos estáticos en modo de desarrollo
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])

@@ -1,4 +1,5 @@
 import io
+import base64
 from PIL import Image
 from django.test import TestCase, Client
 from django.urls import reverse
@@ -88,6 +89,7 @@ class DetectionApiAndWebSocketTests(TestCase):
 
     def setUp(self):
         self.client = Client()
+        call_command('seed_users')
 
     def _generate_test_image(self):
         """Helper generating a small in-memory JPEG test image."""
@@ -148,3 +150,64 @@ class DetectionApiAndWebSocketTests(TestCase):
         self.assertEqual(pong.get('type'), 'pong')
 
         await communicator.disconnect()
+
+    def test_api_create_detection_with_json_base64_image(self):
+        """Verify POST /api/detecciones/ handles base64 image strings in JSON payload."""
+        img = Image.new('RGB', (32, 32), color='green')
+        buf = io.BytesIO()
+        img.save(buf, format='JPEG')
+        b64_str = base64.b64encode(buf.getvalue()).decode('utf-8')
+        data_uri = f"data:image/jpeg;base64,{b64_str}"
+
+        payload = {
+            'objeto': 'Lata de refresco',
+            'categoria': 'Inorgánico',
+            'confianza': 0.97,
+            'camara_id': 'CAM_01',
+            'imagen': data_uri,
+        }
+        response = self.client.post('/api/detecciones/', payload, content_type='application/json')
+        self.assertEqual(response.status_code, 201)
+
+        det = Deteccion.objects.get(id=response.data['id'])
+        self.assertEqual(det.objeto, 'Lata de refresco')
+        self.assertEqual(det.categoria, 'Inorgánico')
+        self.assertTrue(bool(det.imagen))
+        self.assertTrue(det.imagen.name.startswith('capturas/'))
+
+    def test_api_list_detections(self):
+        """Verify GET /api/detecciones/ returns detection records ordered by recent."""
+        Deteccion.objects.create(objeto='Item 1', categoria='Orgánico', confianza=0.88, camara_id='CAM_01')
+        Deteccion.objects.create(objeto='Item 2', categoria='Inorgánico', confianza=0.94, camara_id='CAM_01')
+
+        response = self.client.get('/api/detecciones/')
+        self.assertEqual(response.status_code, 200)
+        self.assertGreaterEqual(len(response.data), 2)
+
+    def test_dashboard_displays_detections_and_sin_foto_fallback(self):
+        """Verify dashboard table renders detections and 'Sin foto' fallback when image is None."""
+        user = User.objects.get(username='lolo')
+        self.client.force_login(user)
+
+        # Detection without image
+        Deteccion.objects.create(
+            objeto='Cáscara de Plátano Test',
+            categoria='Orgánico',
+            confianza=0.91,
+            camara_id='CAM_01',
+            imagen=None
+        )
+
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Cáscara de Plátano Test')
+        self.assertContains(response, 'Orgánico')
+        self.assertContains(response, 'Sin foto')
+        self.assertContains(response, 'Cámara / Ubicación')
+
+    def test_seed_detections_command(self):
+        """Verify python manage.py seed_detections successfully creates sample records."""
+        call_command('seed_detections', clear=True)
+        self.assertGreaterEqual(Deteccion.objects.count(), 8)
+        self.assertTrue(Deteccion.objects.filter(objeto__icontains='Botella').exists())
+        self.assertTrue(Deteccion.objects.filter(objeto__icontains='Manzana').exists())

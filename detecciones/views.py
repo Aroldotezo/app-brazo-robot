@@ -2,7 +2,9 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db.models import Q
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
@@ -14,10 +16,12 @@ from .forms import LoginForm
 class DeteccionViewSet(ModelViewSet):
     """
     REST API endpoint to receive and list detection logs from the desktop classification client.
+    Supports multipart form data, application/json (including base64 images), and standard forms.
     Broadcasts newly created detection records to connected WebSocket clients in real time.
     """
     queryset = Deteccion.objects.all().order_by('-fecha_registro')
     serializer_class = DeteccionSerializer
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def perform_create(self, serializer):
         instance = serializer.save()
@@ -57,8 +61,12 @@ def landing_view(request):
     its core features, architecture, and system benefits.
     """
     total_detections = Deteccion.objects.count()
-    organic_count = Deteccion.objects.filter(categoria__iexact='organico').count()
-    inorganic_count = Deteccion.objects.filter(categoria__iexact='inorganico').count()
+    organic_count = Deteccion.objects.filter(
+        Q(categoria__iexact='organico') | Q(categoria__iexact='orgánico')
+    ).count()
+    inorganic_count = Deteccion.objects.filter(
+        Q(categoria__iexact='inorganico') | Q(categoria__iexact='inorgánico')
+    ).count()
 
     context = {
         'total_detections': total_detections,
@@ -108,8 +116,12 @@ def dashboard_view(request):
     """
     detections = Deteccion.objects.all().order_by('-fecha_registro')[:50]
     total_detections = Deteccion.objects.count()
-    organic_count = Deteccion.objects.filter(categoria__iexact='organico').count()
-    inorganic_count = Deteccion.objects.filter(categoria__iexact='inorganico').count()
+    organic_count = Deteccion.objects.filter(
+        Q(categoria__iexact='organico') | Q(categoria__iexact='orgánico')
+    ).count()
+    inorganic_count = Deteccion.objects.filter(
+        Q(categoria__iexact='inorganico') | Q(categoria__iexact='inorgánico')
+    ).count()
 
     context = {
         'detecciones': detections,

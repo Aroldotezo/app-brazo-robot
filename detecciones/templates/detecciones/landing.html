@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es" class="scroll-smooth">
 
@@ -5,6 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Brazo Robot | Robot clasificador manejado por IA</title>
+    <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -55,11 +57,8 @@
             <div class="flex items-center justify-between h-16">
                 <a href="{% url 'landing' %}" class="flex items-center space-x-3 group">
                     <div
-                        class="w-9 h-9 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-blue-400 group-hover:border-blue-500 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
+                        class="w-10 h-10 rounded-lg bg-white/95 border border-slate-700 p-1 flex items-center justify-center group-hover:border-blue-400 group-hover:scale-105 transition shadow-sm shrink-0">
+                        <img src="{% static 'img/logo.png' %}" alt="Brazo Robot Logo" class="w-full h-full object-contain">
                     </div>
                     <div>
                         <div class="flex items-center space-x-2">
@@ -324,10 +323,9 @@
                 <div class="bg-slate-900 rounded-xl p-6 border border-slate-800 hover:border-slate-700 transition">
                     <div class="flex items-center justify-between mb-4">
                         <span class="text-xs font-mono text-slate-500">MÓDULO 03</span>
-                        <span
-                            class="w-7 h-7 rounded bg-slate-800 text-blue-400 flex items-center justify-center text-xs font-mono font-bold">
-                            ACT
-                        </span>
+                        <div class="w-8 h-8 rounded-lg bg-white/95 p-1 flex items-center justify-center border border-slate-700 shadow-xs">
+                            <img src="{% static 'img/logo.png' %}" alt="Brazo Robot" class="w-full h-full object-contain">
+                        </div>
                     </div>
                     <h3 class="text-base font-bold text-white mb-2">Accionamiento del Brazo Robótico</h3>
                     <p class="text-slate-400 text-xs leading-relaxed">
@@ -464,6 +462,9 @@
         <div
             class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="flex items-center space-x-3">
+                <div class="w-6 h-6 rounded bg-white/95 p-0.5 flex items-center justify-center shrink-0 shadow-xs">
+                    <img src="{% static 'img/logo.png' %}" alt="Brazo Robot Logo" class="w-full h-full object-contain">
+                </div>
                 <span class="font-bold text-slate-300">Brazo Robot</span>
                 <span class="text-slate-600">&bull;</span>
                 <span>Robot clasificador manejado por IA</span>
