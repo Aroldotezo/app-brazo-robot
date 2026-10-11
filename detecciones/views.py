@@ -3,6 +3,8 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from rest_framework.viewsets import ModelViewSet
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 from .models import Deteccion
 from .serializers import DeteccionSerializer
@@ -12,9 +14,41 @@ from .forms import LoginForm
 class DeteccionViewSet(ModelViewSet):
     """
     REST API endpoint to receive and list detection logs from the desktop classification client.
+    Broadcasts newly created detection records to connected WebSocket clients in real time.
     """
     queryset = Deteccion.objects.all().order_by('-fecha_registro')
     serializer_class = DeteccionSerializer
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+
+        # Broadcast new detection event to WebSocket subscribers
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            event_payload = {
+                'id': instance.id,
+                'objeto': instance.objeto,
+                'categoria': instance.categoria,
+                'confianza': float(instance.confianza),
+                'camara_id': instance.camara_id,
+                'imagen_url': instance.imagen.url if instance.imagen else None,
+                'fecha_registro': instance.fecha_registro.strftime('%d/%m/%Y %H:%M:%S'),
+            }
+            async_to_sync(channel_layer.group_send)(
+                f"camera_{instance.camara_id}",
+                {
+                    'type': 'detection_event',
+                    'data': event_payload,
+                }
+            )
+            async_to_sync(channel_layer.group_send)(
+                "camera_all",
+                {
+                    'type': 'detection_event',
+                    'data': event_payload,
+                }
+            )
+
 
 
 def landing_view(request):

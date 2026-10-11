@@ -25,182 +25,365 @@
             }
         }
     </script>
+    <style>
+        /* Smooth fade-in for newly inserted detection rows */
+        @keyframes highlightRow {
+            0% {
+                background-color: rgba(37, 99, 235, 0.35);
+            }
+
+            100% {
+                background-color: transparent;
+            }
+        }
+
+        .animate-highlight {
+            animation: highlightRow 2.5s ease-out;
+        }
+    </style>
 </head>
 
 <body
     class="bg-slate-950 min-h-screen text-slate-200 font-sans antialiased selection:bg-blue-600 selection:text-white flex flex-col">
 
-    <!-- Mensajes Flash de Django -->
+    <!-- Toast Notification Container (Universal Modular Component) -->
+    <div id="toast-container"
+        class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2.5 pointer-events-none max-w-sm w-full px-4 sm:px-0">
+    </div>
+
+    <!-- Django Flash Messages (DOM Bridge para evitar etiquetas Django dentro de scripts JS) -->
     {% if messages %}
-    <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-4">
+    <div id="django-flash-messages" class="hidden" aria-hidden="true">
         {% for message in messages %}
-        <div
-            class="flex items-center justify-between p-3.5 rounded-lg border text-xs shadow-lg {% if message.tags == 'error' %}bg-rose-950/90 border-rose-600/40 text-rose-200{% elif message.tags == 'success' %}bg-blue-950/90 border-blue-600/40 text-blue-200{% else %}bg-slate-900 border-slate-700 text-slate-200{% endif %}">
-            <div class="flex items-center space-x-2.5">
-                <span
-                    class="w-2 h-2 rounded-full shrink-0 {% if message.tags == 'error' %}bg-rose-400{% else %}bg-blue-400{% endif %}"></span>
-                <span>{{ message }}</span>
-            </div>
-            <button type="button" onclick="this.parentElement.remove()"
-                class="text-slate-400 hover:text-white text-xs font-semibold">✕</button>
-        </div>
+        <span data-msg="{{ message|escapejs }}"
+            data-type="{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% else %}info{% endif %}"></span>
         {% endfor %}
     </div>
     {% endif %}
 
-    <!-- Header / Navbar Técnico -->
+    <!-- Modal de Vista Previa de Imagen (Lightbox) -->
+    <div id="image-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4"
+        onclick="closeImageModal()">
+        <div class="relative max-w-2xl max-h-[90vh] bg-slate-900 rounded-xl border border-slate-700 overflow-hidden p-2 shadow-2xl"
+            onclick="event.stopPropagation()">
+            <button onclick="closeImageModal()"
+                class="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center text-sm font-bold border border-slate-700">✕</button>
+            <img id="modal-img" src="" alt="Captura ampliada" class="w-full max-h-[80vh] object-contain rounded-lg">
+            <p id="modal-caption" class="text-xs text-slate-300 font-mono mt-2 text-center"></p>
+        </div>
+    </div>
+
+    <!-- Header / Navbar Técnico Adaptativo (Mobile-First) -->
     <header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-30">
-        <div
-            class="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div class="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
 
-            <!-- Título e Identidad -->
-            <div class="flex items-center space-x-3">
-                <a href="{% url 'landing' %}"
-                    class="w-9 h-9 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-blue-400 hover:border-blue-500 transition"
-                    title="Ir a la Landing Page">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                </a>
-                <div>
-                    <div class="flex items-center space-x-2">
-                        <h1 class="text-base font-bold tracking-tight text-white">Brazo Robot &bull; Monitoreo de
-                            Residuos en Tiempo Real</h1>
-                        <span
-                            class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <span class="w-1.5 h-1.5 mr-1 bg-emerald-400 rounded-full animate-ping"></span>
-                            ACTIVO
-                        </span>
-                    </div>
-                    <p class="text-slate-400 text-xs mt-0.5">Visor de clasificaciones enviadas desde el cliente de
-                        escritorio</p>
-                </div>
-            </div>
-
-            <!-- Panel de Usuario y Cerrar Sesión -->
-            <div class="flex items-center space-x-3">
-                <a href="{% url 'landing' %}"
-                    class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 bg-slate-900 hover:bg-slate-800 border border-slate-800 transition">
-                    <svg class="w-3.5 h-3.5 mr-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                    Ver Inicio
-                </a>
-
-                <!-- Perfil del Usuario Autenticado -->
-                <div
-                    class="flex items-center space-x-2.5 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs">
-                    <div
-                        class="w-6 h-6 rounded bg-slate-800 text-blue-400 font-bold flex items-center justify-center text-[11px] font-mono uppercase">
-                        {{ request.user.username|slice:":2" }}
-                    </div>
-                    <div class="text-left">
-                        <p class="text-xs font-semibold text-white leading-tight font-mono">
-                            {{ request.user.first_name|default:request.user.username }}
-                        </p>
-                        <div class="flex items-center space-x-1">
-                            <span class="text-[9px] uppercase font-mono px-1 rounded bg-slate-800 text-slate-400">
-                                {{ request.user.get_role_display|default:request.user.role }}
-                            </span>
-                            {% if request.user.phone %}
-                            <span class="text-[9px] text-slate-500 font-mono hidden md:inline">&bull; {{
-                                request.user.phone }}</span>
-                            {% endif %}
+                <!-- Título e Identidad -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <a href="{% url 'landing' %}"
+                            class="w-9 h-9 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-blue-400 hover:border-blue-500 transition shrink-0"
+                            title="Ir a la Landing Page">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                        </a>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h1 class="text-sm sm:text-base font-bold tracking-tight text-white">Brazo Robot &bull;
+                                    Monitoreo de Residuos en Tiempo Real</h1>
+                                <span id="server-status-pill"
+                                    class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    <span class="w-1.5 h-1.5 mr-1 bg-emerald-400 rounded-full animate-ping"></span>
+                                    ONLINE
+                                </span>
+                            </div>
+                            <p class="text-slate-400 text-[11px] sm:text-xs mt-0.5">Transmisión de video WebSocket
+                                &bull; Sincronización continua de capturas</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Botón de Cerrar Sesión -->
-                <a href="{% url 'logout' %}" id="logout-button"
-                    class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium text-rose-300 bg-rose-950/50 hover:bg-rose-900/50 border border-rose-800/40 transition">
-                    <svg class="w-3.5 h-3.5 mr-1 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Cerrar Sesión
-                </a>
+                <!-- Panel de Usuario y Cerrar Sesión -->
+                <div
+                    class="flex flex-wrap items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t border-slate-850 sm:border-t-0">
+                    <a href="{% url 'landing' %}"
+                        class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 bg-slate-900 hover:bg-slate-800 border border-slate-800 transition">
+                        <svg class="w-3.5 h-3.5 mr-1 text-slate-400" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                        Inicio
+                    </a>
+
+                    <!-- Perfil del Usuario Autenticado -->
+                    <div
+                        class="flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs">
+                        <div
+                            class="w-6 h-6 rounded bg-slate-800 text-blue-400 font-bold flex items-center justify-center text-[10px] font-mono uppercase">
+                            {{ request.user.username|slice:":2" }}
+                        </div>
+                        <div class="text-left">
+                            <p class="text-xs font-semibold text-white leading-tight font-mono">
+                                {{ request.user.first_name|default:request.user.username }}
+                            </p>
+                            <span class="text-[9px] uppercase font-mono px-1 rounded bg-slate-800 text-slate-400">
+                                {{ request.user.get_role_display|default:request.user.role }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Botón de Cerrar Sesión -->
+                    <a href="{% url 'logout' %}" id="logout-button"
+                        class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium text-rose-300 bg-rose-950/50 hover:bg-rose-900/50 border border-rose-800/40 transition">
+                        <svg class="w-3.5 h-3.5 mr-1 text-rose-400" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Salir
+                    </a>
+                </div>
+
             </div>
         </div>
     </header>
 
     <!-- Contenido Principal -->
-    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-5 flex-1">
+    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6 flex-1">
 
-        <!-- Métricas Rápidas -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- MÓDULO 1: TRANSMISIÓN DE CÁMARA EN TIEMPO REAL (WEBSOCKETS) -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+            <!-- Ventana Principal del Video Streaming (Mobile-Responsive) -->
+            <div
+                class="lg:col-span-8 bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-xl flex flex-col">
+                <!-- Barra Superior de Control del Stream -->
+                <div
+                    class="bg-slate-950 px-3.5 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs font-mono">
+                    <div class="flex items-center space-x-2">
+                        <span id="ws-indicator-dot" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                        <span id="ws-status-text" class="text-slate-300 font-semibold text-[11px] sm:text-xs">CONECTANDO
+                            A STREAM...</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2 text-[10px] sm:text-[11px]">
+                        <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400">
+                            CAM_ID: <strong class="text-white">CAM_01</strong>
+                        </span>
+                        <span id="fps-counter-badge"
+                            class="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-800/40 text-blue-300 font-bold hidden sm:inline">
+                            0.0 FPS
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Canvas / Contenedor de Fotogramas de la Cámara -->
+                <div
+                    class="relative w-full aspect-video sm:aspect-[16/10] bg-slate-950 flex items-center justify-center overflow-hidden">
+                    <!-- Elemento Imagen de la Transmisión -->
+                    <img id="camera-stream-img" src="" alt="Transmisión en vivo"
+                        class="w-full h-full object-contain hidden z-10 transition-opacity duration-200">
+
+                    <!-- Pantalla de Espera / Standby del Video -->
+                    <div id="camera-standby-screen"
+                        class="absolute inset-0 z-0 flex flex-col items-center justify-center p-6 text-center space-y-3 bg-slate-950/95">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-blue-400">
+                            <svg class="w-7 h-7 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                    d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-white">Esperando fotogramas de la cámara</p>
+                            <p class="text-xs text-slate-400 mt-1 max-w-sm">Inicia <code
+                                    class="text-blue-400 font-mono">python app_escritorio.py</code> para transmitir el
+                                video de YOLO en tiempo real por WebSockets.</p>
+                        </div>
+                        <div
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-[10px] font-mono text-slate-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping"></span>
+                            ws://<span id="ws-host-display">localhost:8000</span>/ws/camera/CAM_01/
+                        </div>
+                    </div>
+
+                    <!-- Overlay de Telemetría sobre el Video (HUD) -->
+                    <div id="video-hud"
+                        class="absolute bottom-2 left-2 z-20 flex items-center gap-2 pointer-events-none">
+                        <span
+                            class="bg-slate-950/80 backdrop-blur px-2 py-0.5 rounded border border-slate-800 text-[10px] font-mono text-slate-300">
+                            CANAL: CAM_01
+                        </span>
+                        <span id="hud-frames-count"
+                            class="bg-slate-950/80 backdrop-blur px-2 py-0.5 rounded border border-slate-800 text-[10px] font-mono text-slate-400">
+                            0 frames
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Pie de Controles y Diagnóstico del Stream -->
+                <div
+                    class="p-3 bg-slate-950/90 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div class="flex items-center space-x-2">
+                        <button type="button" onclick="testWebSocketPing()"
+                            class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-mono transition">
+                            Probar Ping WS
+                        </button>
+                        <button type="button" onclick="reconnectWebSocketManually()"
+                            class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-mono transition">
+                            Reconectar
+                        </button>
+                    </div>
+                    <span id="stream-latency-info" class="text-[11px] font-mono text-slate-400">
+                        Latencia de red: <strong class="text-slate-200">-- ms</strong>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Panel Lateral: Diagnóstico Rápido y Última Detección -->
+            <div class="lg:col-span-4 space-y-4">
+
+                <!-- Ficha de Último Objeto Detectado -->
+                <div class="bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-800 shadow-sm">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+                        <p class="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Última Detección
+                        </p>
+                        <span id="latest-category-badge"
+                            class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                            EN ESPERA
+                        </span>
+                    </div>
+
+                    <div class="flex items-center space-x-3.5">
+                        <div id="latest-image-container"
+                            class="w-16 h-16 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0 overflow-hidden">
+                            <span class="text-[10px] font-mono text-slate-600">SIN FOTO</span>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p id="latest-object-name" class="text-base font-bold text-white truncate">Ninguna detección
+                            </p>
+                            <p id="latest-confidence-text" class="text-xs font-mono text-slate-400 mt-0.5">Confianza:
+                                --%</p>
+                            <p id="latest-timestamp-text" class="text-[11px] text-slate-500 font-mono mt-0.5">--</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estado del Sistema Mecatrónico -->
+                <div class="bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-800 space-y-3">
+                    <p class="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Estado Mecatrónico
+                    </p>
+                    <div class="space-y-2 text-xs font-mono">
+                        <div class="flex justify-between items-center p-2 rounded bg-slate-950 border border-slate-800">
+                            <span class="text-slate-400">Brazo Robótico:</span>
+                            <span id="hw-arm-status" class="text-emerald-400 font-semibold">Listo / Calibrado</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 rounded bg-slate-950 border border-slate-800">
+                            <span class="text-slate-400">Canal API REST:</span>
+                            <span class="text-blue-400 font-semibold">/api/detecciones/</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 rounded bg-slate-950 border border-slate-800">
+                            <span class="text-slate-400">Canal WebSocket:</span>
+                            <span class="text-emerald-400 font-semibold">ws/camera/CAM_01/</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- MÓDULO 2: MÉTRICAS RÁPIDAS (TOTAL, ORGÁNICOS, INORGÁNICOS, CAM) -->
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <!-- Total -->
-            <div class="bg-slate-900 rounded-xl p-5 border border-slate-800">
-                <p class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Total Detecciones</p>
-                <p class="text-2xl font-bold text-white font-mono mt-1">{{ total }}</p>
-                <p class="text-[11px] text-slate-500 mt-0.5">Eventos registrados</p>
+            <div class="bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-800">
+                <p class="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-slate-400">Total
+                    Detecciones</p>
+                <p id="metric-total-count" class="text-2xl sm:text-3xl font-extrabold text-white font-mono mt-1">
+                    {{total }}</p>
+                <p class="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">Eventos en base de datos</p>
             </div>
 
             <!-- Orgánicos -->
-            <div class="bg-slate-900 rounded-xl p-5 border border-slate-800">
-                <p class="text-[10px] font-mono uppercase tracking-wider text-emerald-400">Orgánicos</p>
-                <p class="text-2xl font-bold text-emerald-400 font-mono mt-1">{{ organic_count|default:"0" }}</p>
-                <p class="text-[11px] text-slate-500 mt-0.5">Tolva A (Compostable)</p>
+            <div class="bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-800">
+                <p class="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-emerald-400">Orgánicos</p>
+                <p id="metric-organic-count"
+                    class="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono mt-1">
+                    {{organic_count|default:"0" }}</p>
+                <p class="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">Tolva A (Compostaje)</p>
             </div>
 
             <!-- Inorgánicos -->
-            <div class="bg-slate-900 rounded-xl p-5 border border-slate-800">
-                <p class="text-[10px] font-mono uppercase tracking-wider text-amber-400">Inorgánicos</p>
-                <p class="text-2xl font-bold text-amber-400 font-mono mt-1">{{ inorganic_count|default:"0" }}</p>
-                <p class="text-[11px] text-slate-500 mt-0.5">Tolva B (Reciclable)</p>
+            <div class="bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-800">
+                <p class="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-amber-400">Inorgánicos</p>
+                <p id="metric-inorganic-count"
+                    class="text-2xl sm:text-3xl font-extrabold text-amber-400 font-mono mt-1">
+                    {{inorganic_count|default:"0" }}</p>
+                <p class="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">Tolva B (Reciclable)</p>
             </div>
 
-            <!-- Cámara / Estado -->
-            <div class="bg-slate-900 rounded-xl p-5 border border-slate-800">
-                <p class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Cámara / Canal</p>
-                <p class="text-base font-bold text-blue-400 font-mono mt-1 flex items-center">
-                    <span class="w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
-                    CAM_01 &bull; En Línea
+            <!-- Canal de Cámara / API -->
+            <div class="bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-800">
+                <p class="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-slate-400">Cámara Activa
                 </p>
-                <p class="text-[11px] text-slate-500 mt-0.5">API REST lista para POST</p>
+                <p class="text-lg sm:text-xl font-bold text-blue-400 font-mono mt-1 flex items-center">
+                    <span class="w-2 h-2 rounded-full bg-blue-500 mr-2 shrink-0"></span>
+                    CAM_01
+                </p>
+                <p class="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">Recepción de imágenes POST</p>
             </div>
-        </div>
+        </section>
 
-        <!-- Tabla de Registros -->
-        <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-sm">
+        <!-- MÓDULO 3: TABLA DE HISTORIAL CON CONTENEDOR RESPONSIVE Y SCROLL MÓVIL -->
+        <section class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-sm">
             <div
-                class="px-5 py-3.5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-slate-900/90">
+                class="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-slate-900/90">
                 <div>
-                    <h2 class="text-sm font-bold text-white font-mono uppercase tracking-wide">Historial Reciente de
-                        Detecciones</h2>
-                    <p class="text-xs text-slate-400">Registros ópticos sincronizados con marca de tiempo</p>
+                    <h2 class="text-sm font-bold text-white font-mono uppercase tracking-wide">Historial de
+                        Clasificaciones</h2>
+                    <p class="text-[11px] sm:text-xs text-slate-400">Registros sincronizados con captura fotográfica y
+                        nivel de confianza</p>
                 </div>
-                <a href="/api/detecciones/" target="_blank"
-                    class="inline-flex items-center text-xs font-mono text-blue-400 hover:text-blue-300 transition bg-slate-950 border border-slate-800 px-2.5 py-1 rounded w-fit">
-                    <span>API JSON</span>
-                    <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                </a>
+                <div class="flex items-center space-x-2">
+                    <span id="new-item-indicator" class="hidden text-[11px] font-mono text-emerald-400 animate-pulse">●
+                        Actualizado</span>
+                    <a href="/api/detecciones/" target="_blank"
+                        class="inline-flex items-center text-xs font-mono text-blue-400 hover:text-blue-300 transition bg-slate-950 border border-slate-800 px-2.5 py-1 rounded w-fit">
+                        <span>API JSON</span>
+                        <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                    </a>
+                </div>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-xs">
+            <!-- Contenedor Responsive con Desplazamiento Táctil en Móviles -->
+            <div class="overflow-x-auto" style="-webkit-overflow-scrolling: touch;">
+                <table class="w-full text-left border-collapse text-xs whitespace-nowrap min-w-[620px]">
                     <thead>
                         <tr
                             class="bg-slate-950 text-slate-400 uppercase font-mono text-[10px] tracking-wider border-b border-slate-800">
-                            <th class="py-2.5 px-5">Captura</th>
-                            <th class="py-2.5 px-5">Objeto</th>
-                            <th class="py-2.5 px-5">Categoría</th>
-                            <th class="py-2.5 px-5">Confianza</th>
-                            <th class="py-2.5 px-5">Cámara</th>
-                            <th class="py-2.5 px-5">Fecha / Hora</th>
+                            <th class="py-2.5 px-4 sm:px-5">Captura</th>
+                            <th class="py-2.5 px-4 sm:px-5">Objeto</th>
+                            <th class="py-2.5 px-4 sm:px-5">Categoría</th>
+                            <th class="py-2.5 px-4 sm:px-5">Confianza</th>
+                            <th class="py-2.5 px-4 sm:px-5">Cámara</th>
+                            <th class="py-2.5 px-4 sm:px-5">Fecha / Hora</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-800/80 font-mono">
+                    <tbody id="detections-tbody" class="divide-y divide-slate-800/80 font-mono">
                         {% for d in detecciones %}
                         <tr class="hover:bg-slate-800/50 transition-colors">
-                            <td class="py-2.5 px-5">
+                            <td class="py-2.5 px-4 sm:px-5">
                                 {% if d.imagen %}
-                                <img src="{{ d.imagen.url }}"
-                                    class="w-10 h-10 object-cover rounded border border-slate-700 shadow-sm"
+                                <img src="{{ d.imagen.url }}" data-url="{{ d.imagen.url }}"
+                                    data-caption="{{ d.objeto }} - {{ d.fecha_registro|date:'d/m/Y H:i:s' }}"
+                                    onclick="openImageModal(this.dataset.url, this.dataset.caption)"
+                                    class="w-10 h-10 object-cover rounded border border-slate-700 shadow-sm cursor-pointer hover:border-blue-400 transition"
                                     alt="captura">
                                 {% else %}
                                 <div
@@ -209,8 +392,8 @@
                                 </div>
                                 {% endif %}
                             </td>
-                            <td class="py-2.5 px-5 font-semibold text-white font-sans">{{ d.objeto }}</td>
-                            <td class="py-2.5 px-5">
+                            <td class="py-2.5 px-4 sm:px-5 font-semibold text-white font-sans">{{ d.objeto }}</td>
+                            <td class="py-2.5 px-4 sm:px-5">
                                 {% if d.categoria|lower == 'organico' %}
                                 <span
                                     class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
@@ -223,14 +406,15 @@
                                 </span>
                                 {% endif %}
                             </td>
-                            <td class="py-2.5 px-5 text-slate-300">
+                            <td class="py-2.5 px-4 sm:px-5 text-slate-300">
                                 {{ d.confianza|floatformat:2 }}
                             </td>
-                            <td class="py-2.5 px-5 text-slate-400">{{ d.camara_id }}</td>
-                            <td class="py-2.5 px-5 text-slate-400">{{ d.fecha_registro|date:"d/m/Y H:i:s" }}</td>
+                            <td class="py-2.5 px-4 sm:px-5 text-slate-400">{{ d.camara_id }}</td>
+                            <td class="py-2.5 px-4 sm:px-5 text-slate-400">{{ d.fecha_registro|date:"d/m/Y H:i:s" }}
+                            </td>
                         </tr>
                         {% empty %}
-                        <tr>
+                        <tr id="empty-row">
                             <td colspan="6" class="py-12 text-center text-slate-500 font-sans">
                                 <svg class="w-10 h-10 mx-auto mb-2 text-slate-700" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24">
@@ -247,17 +431,415 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </section>
 
     </main>
 
     <!-- Footer Técnico -->
     <footer class="bg-slate-950 border-t border-slate-800/80 py-4 text-slate-500 text-xs font-mono text-center mt-auto">
         <div class="max-w-7xl mx-auto px-4">
-            <p>Brazo Robot &bull; Usuario activo: <span class="text-slate-300">{{ request.user.username }}</span> ({{
-                request.user.get_role_display|default:request.user.role }})</p>
+            <p>Brazo Robot &bull; Monitoreo Activo &bull; Usuario: <span class="text-slate-300">{{ request.user.username
+                    }}</span> ({{ request.user.get_role_display|default:request.user.role }})</p>
         </div>
     </footer>
+
+    <!-- ================================================================= -->
+    <!-- COMPONENTE UNIVERSAL DE NOTIFICACIONES TOAST (MODULAR JAVASCRIPT) -->
+    <!-- ================================================================= -->
+    <script>
+        /**
+         * Toast Notification Module (Universal & Auto-dismissing)
+         * Supports: 'success', 'warning', 'error', 'info'
+         */
+        const Toast = {
+            container: document.getElementById('toast-container'),
+
+            icons: {
+                success: `<svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+                warning: `<svg class="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`,
+                error: `<svg class="w-5 h-5 text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+                info: `<svg class="w-5 h-5 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
+            },
+
+            colors: {
+                success: 'bg-slate-900/95 border-emerald-500/40 text-emerald-100 shadow-emerald-950/50',
+                warning: 'bg-slate-900/95 border-amber-500/40 text-amber-100 shadow-amber-950/50',
+                error: 'bg-slate-900/95 border-rose-500/40 text-rose-100 shadow-rose-950/50',
+                info: 'bg-slate-900/95 border-blue-500/40 text-blue-100 shadow-blue-950/50'
+            },
+
+            show(message, type = 'info', duration = 4000) {
+                if (!this.container) return;
+
+                const validTypes = ['success', 'warning', 'error', 'info'];
+                const toastType = validTypes.includes(type) ? type : 'info';
+
+                // Create Toast DOM element
+                const toast = document.createElement('div');
+                toast.className = `pointer-events-auto flex items-start justify-between p-3.5 rounded-xl border shadow-xl backdrop-blur text-xs transition-all duration-300 ease-out transform translate-y-3 opacity-0 ${this.colors[toastType]}`;
+
+                toast.innerHTML = `
+                    <div class="flex items-start space-x-2.5 pr-2">
+                        ${this.icons[toastType]}
+                        <span class="pt-0.5 leading-snug break-words">${message}</span>
+                    </div>
+                    <button type="button" aria-label="Cerrar notificación" class="text-slate-400 hover:text-white p-0.5 transition shrink-0 ml-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                `;
+
+                // Handle manual close
+                const closeBtn = toast.querySelector('button');
+                closeBtn.addEventListener('click', () => this.dismiss(toast));
+
+                // Append to container
+                this.container.appendChild(toast);
+
+                // Trigger enter animation on next frame
+                requestAnimationFrame(() => {
+                    toast.classList.remove('translate-y-3', 'opacity-0');
+                    toast.classList.add('translate-y-0', 'opacity-100');
+                });
+
+                // Auto-dismiss after timeout
+                if (duration > 0) {
+                    setTimeout(() => {
+                        this.dismiss(toast);
+                    }, duration);
+                }
+
+                return toast;
+            },
+
+            dismiss(toast) {
+                if (!toast || !toast.parentElement) return;
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => {
+                    if (toast.parentElement) toast.remove();
+                }, 300);
+            },
+
+            success(msg, dur) { return this.show(msg, 'success', dur); },
+            warning(msg, dur) { return this.show(msg, 'warning', dur); },
+            error(msg, dur) { return this.show(msg, 'error', dur); },
+            info(msg, dur) { return this.show(msg, 'info', dur); }
+        };
+
+        window.Toast = Toast;
+
+        // Display any Django flash messages passed on initial load
+        document.querySelectorAll('#django-flash-messages span').forEach(el => {
+            const msg = el.dataset.msg;
+            const type = el.dataset.type || 'info';
+            if (msg) Toast.show(msg, type, 5000);
+        });
+    </script>
+
+    <!-- ================================================================= -->
+    <!-- CLIENTE WEBSOCKET PARA STREAMING DE CÁMARA Y TELEMETRÍA EN VIVO   -->
+    <!-- ================================================================= -->
+    <script>
+        const CAMERA_ID = "CAM_01";
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/ws/camera/${CAMERA_ID}/`;
+
+        // DOM Elements
+        const streamImg = document.getElementById('camera-stream-img');
+        const standbyScreen = document.getElementById('camera-standby-screen');
+        const wsIndicatorDot = document.getElementById('ws-indicator-dot');
+        const wsStatusText = document.getElementById('ws-status-text');
+        const fpsCounterBadge = document.getElementById('fps-counter-badge');
+        const hudFramesCount = document.getElementById('hud-frames-count');
+        const latencyDisplay = document.getElementById('stream-latency-info');
+        const wsHostDisplay = document.getElementById('ws-host-display');
+        const detectionsTbody = document.getElementById('detections-tbody');
+        const emptyRow = document.getElementById('empty-row');
+
+        // Counters Elements
+        const metricTotal = document.getElementById('metric-total-count');
+        const metricOrganic = document.getElementById('metric-organic-count');
+        const metricInorganic = document.getElementById('metric-inorganic-count');
+
+        // Latest Detection Card Elements
+        const latestObjectName = document.getElementById('latest-object-name');
+        const latestConfidence = document.getElementById('latest-confidence-text');
+        const latestTimestamp = document.getElementById('latest-timestamp-text');
+        const latestCategoryBadge = document.getElementById('latest-category-badge');
+        const latestImageContainer = document.getElementById('latest-image-container');
+
+        if (wsHostDisplay) {
+            wsHostDisplay.textContent = window.location.host;
+        }
+
+        // Metrics State
+        let totalFramesReceived = 0;
+        let lastFrameTimestamp = performance.now();
+        let fpsCalculatorTimer = null;
+        let framesInLastSecond = 0;
+        let currentFps = 0.0;
+        let socket = null;
+        let reconnectTimeout = null;
+        let pingStartTime = 0;
+
+        /**
+         * Initialize WebSocket Connection
+         */
+        function initCameraWebSocket() {
+            if (socket) {
+                try { socket.close(); } catch (e) { }
+            }
+
+            wsStatusText.textContent = "CONECTANDO A WS...";
+            wsIndicatorDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
+
+            socket = new WebSocket(wsUrl);
+            socket.binaryType = "blob";
+
+            socket.onopen = function (event) {
+                console.log("[WebSocket] Conectado exitosamente a:", wsUrl);
+                wsStatusText.textContent = "CANAL DE STREAM ACTIVO";
+                wsIndicatorDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+                Toast.info("Canal de video y telemetría conectado (" + CAMERA_ID + ")", 3500);
+
+                // Start FPS interval calculation
+                clearInterval(fpsCalculatorTimer);
+                fpsCalculatorTimer = setInterval(calculateFPS, 1000);
+            };
+
+            socket.onmessage = function (event) {
+                // Case A: Binary JPEG frame sent directly from OpenCV desktop client
+                if (event.data instanceof Blob) {
+                    handleBinaryFrame(event.data);
+                    return;
+                }
+
+                // Case B: Text message (JSON)
+                try {
+                    const message = JSON.parse(event.data);
+                    handleJsonMessage(message);
+                } catch (err) {
+                    console.warn("[WebSocket] Error parseando mensaje JSON:", err);
+                }
+            };
+
+            socket.onclose = function (event) {
+                console.warn("[WebSocket] Conexión cerrada. Código:", event.code);
+                wsStatusText.textContent = "DESCONECTADO (REINTENTANDO)";
+                wsIndicatorDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+                clearInterval(fpsCalculatorTimer);
+                currentFps = 0.0;
+                fpsCounterBadge.textContent = "0.0 FPS";
+
+                // Auto-reconnect after 3 seconds
+                clearTimeout(reconnectTimeout);
+                reconnectTimeout = setTimeout(initCameraWebSocket, 3000);
+            };
+
+            socket.onerror = function (error) {
+                console.error("[WebSocket] Error en conexión:", error);
+            };
+        }
+
+        /**
+         * Handle incoming binary JPEG Blob
+         */
+        function handleBinaryFrame(blob) {
+            const objectUrl = URL.createObjectURL(blob);
+            displayFrameUrl(objectUrl, true);
+        }
+
+        /**
+         * Handle incoming JSON message
+         */
+        function handleJsonMessage(msg) {
+            // Heartbeat pong response
+            if (msg.type === 'pong') {
+                const latency = Math.round(performance.now() - pingStartTime);
+                latencyDisplay.innerHTML = `Latencia de red: <strong class="text-emerald-400">${latency} ms</strong>`;
+                Toast.info(`Ping recibido: ${latency} ms`, 2500);
+                return;
+            }
+
+            // Video frame sent as base64 string
+            if (msg.type === 'frame' || msg.type === 'camera_frame') {
+                const frameSrc = msg.frame.startsWith('data:') ? msg.frame : `data:image/jpeg;base64,${msg.frame}`;
+                displayFrameUrl(frameSrc, false);
+                return;
+            }
+
+            // Real-time Detection Event (from desktop or API broadcast)
+            if (msg.type === 'detection') {
+                const d = msg.data || msg;
+                handleNewDetectionReceived(d);
+                return;
+            }
+
+            // System notifications
+            if (msg.type === 'notification') {
+                Toast.show(msg.message, msg.notification_type || 'info');
+            }
+        }
+
+        /**
+         * Render video frame into image element
+         */
+        function displayFrameUrl(src, isBlob) {
+            if (standbyScreen && !standbyScreen.classList.contains('hidden')) {
+                standbyScreen.classList.add('hidden');
+                streamImg.classList.remove('hidden');
+            }
+
+            const prevSrc = streamImg.src;
+            streamImg.src = src;
+
+            if (isBlob && prevSrc && prevSrc.startsWith('blob:')) {
+                URL.revokeObjectURL(prevSrc);
+            }
+
+            totalFramesReceived++;
+            framesInLastSecond++;
+            hudFramesCount.textContent = `${totalFramesReceived} frames`;
+        }
+
+        /**
+         * FPS Calculator
+         */
+        function calculateFPS() {
+            currentFps = framesInLastSecond;
+            framesInLastSecond = 0;
+            fpsCounterBadge.textContent = `${currentFps.toFixed(1)} FPS`;
+        }
+
+        /**
+         * Process a newly received detection event:
+         * 1. Trigger universal Toast
+         * 2. Prepend row to detections table
+         * 3. Update counter cards
+         * 4. Update latest detection summary
+         */
+        function handleNewDetectionReceived(d) {
+            const objectName = d.objeto || "Objeto";
+            const category = (d.categoria || "inorganico").toLowerCase();
+            const confidencePercent = Math.round((d.confianza || 0) * 100);
+            const isOrganic = category === 'organico';
+            const categoryLabel = isOrganic ? 'Orgánico' : 'Inorgánico';
+
+            // 1. Trigger Toast Notification
+            Toast.success(`¡Detección en vivo! <strong>${escapeHtml(objectName)}</strong> &bull; ${categoryLabel} (${confidencePercent}%)`, 5000);
+
+            // 2. Prepend row to table
+            if (emptyRow && emptyRow.parentElement) {
+                emptyRow.remove();
+            }
+
+            const newRow = document.createElement('tr');
+            newRow.className = "hover:bg-slate-800/50 transition-colors animate-highlight";
+
+            const imgHtml = d.imagen_url
+                ? `<img src="${d.imagen_url}" onclick="openImageModal('${d.imagen_url}', '${escapeHtml(objectName)}')" class="w-10 h-10 object-cover rounded border border-slate-700 shadow-sm cursor-pointer hover:border-blue-400 transition" alt="captura">`
+                : `<div class="w-10 h-10 rounded bg-slate-950 border border-slate-800 flex items-center justify-center text-[9px] text-slate-500">N/A</div>`;
+
+            const badgeHtml = isOrganic
+                ? `<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Orgánico</span>`
+                : `<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">Inorgánico</span>`;
+
+            newRow.innerHTML = `
+                <td class="py-2.5 px-4 sm:px-5">${imgHtml}</td>
+                <td class="py-2.5 px-4 sm:px-5 font-semibold text-white font-sans">${escapeHtml(objectName)}</td>
+                <td class="py-2.5 px-4 sm:px-5">${badgeHtml}</td>
+                <td class="py-2.5 px-4 sm:px-5 text-slate-300 font-mono">${(d.confianza || 0).toFixed(2)}</td>
+                <td class="py-2.5 px-4 sm:px-5 text-slate-400 font-mono">${escapeHtml(d.camara_id || 'CAM_01')}</td>
+                <td class="py-2.5 px-4 sm:px-5 text-slate-400 font-mono">${escapeHtml(d.fecha_registro || 'Justo ahora')}</td>
+            `;
+
+            detectionsTbody.insertBefore(newRow, detectionsTbody.firstChild);
+
+            // 3. Update counter cards
+            if (metricTotal) {
+                const currentTotal = parseInt(metricTotal.textContent) || 0;
+                metricTotal.textContent = currentTotal + 1;
+            }
+            if (isOrganic && metricOrganic) {
+                const cur = parseInt(metricOrganic.textContent) || 0;
+                metricOrganic.textContent = cur + 1;
+            } else if (!isOrganic && metricInorganic) {
+                const cur = parseInt(metricInorganic.textContent) || 0;
+                metricInorganic.textContent = cur + 1;
+            }
+
+            // 4. Update Latest Detection Card
+            if (latestObjectName) latestObjectName.textContent = objectName;
+            if (latestConfidence) latestConfidence.textContent = `Confianza: ${confidencePercent}%`;
+            if (latestTimestamp) latestTimestamp.textContent = d.fecha_registro || 'Justo ahora';
+
+            if (latestCategoryBadge) {
+                latestCategoryBadge.textContent = categoryLabel.toUpperCase();
+                latestCategoryBadge.className = isOrganic
+                    ? "px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                    : "px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30";
+            }
+
+            if (latestImageContainer && d.imagen_url) {
+                latestImageContainer.innerHTML = `<img src="${d.imagen_url}" class="w-full h-full object-cover">`;
+            }
+
+            // Show updated indicator
+            const updateIndicator = document.getElementById('new-item-indicator');
+            if (updateIndicator) {
+                updateIndicator.classList.remove('hidden');
+                setTimeout(() => updateIndicator.classList.add('hidden'), 4000);
+            }
+        }
+
+        /**
+         * Manual Actions
+         */
+        function testWebSocketPing() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                pingStartTime = performance.now();
+                socket.send(JSON.stringify({ type: 'ping' }));
+            } else {
+                Toast.warning("El WebSocket no está conectado en este momento.", 3000);
+            }
+        }
+
+        function reconnectWebSocketManually() {
+            Toast.info("Reconectando al servidor de video...", 2000);
+            initCameraWebSocket();
+        }
+
+        /**
+         * Image Lightbox Modal Functions
+         */
+        function openImageModal(url, caption) {
+            const modal = document.getElementById('image-modal');
+            const modalImg = document.getElementById('modal-img');
+            const modalCaption = document.getElementById('modal-caption');
+
+            modalImg.src = url;
+            modalCaption.textContent = caption || '';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeImageModal() {
+            const modal = document.getElementById('image-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize WebSocket on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initCameraWebSocket();
+        });
+    </script>
 
 </body>
 

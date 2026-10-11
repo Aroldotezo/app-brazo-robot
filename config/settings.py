@@ -31,7 +31,10 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    # Apps por defecto de Django...
+    # ASGI server integration (Daphne must be listed before staticfiles/admin)
+    'daphne',
+
+    # Default Django apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -39,11 +42,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # Librerías de terceros
+    # Third-party libraries
+    'channels',
     'rest_framework',
     'corsheaders',
 
-    # Tu app local
+    # Local app
     'detecciones',
 ]
 
@@ -75,6 +79,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
 
 
 # Database
@@ -150,4 +156,12 @@ PASSWORD_HASHERS = [
 # Authentication URLs
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
-LOGOUT_REDIRECT_URL = 'landing'
+LOGOUT_REDIRECT_URL = 'landing'
+
+# Channels In-Memory Channel Layer
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
+
