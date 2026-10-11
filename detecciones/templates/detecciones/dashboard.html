@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Brazo Robot</title>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Inter"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body
+    class="bg-slate-950 min-h-screen text-slate-200 font-sans antialiased selection:bg-blue-600 selection:text-white flex flex-col">
+
+    <!-- Mensajes Flash de Django -->
+    {% if messages %}
+    <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-4">
+        {% for message in messages %}
+        <div
+            class="flex items-center justify-between p-3.5 rounded-lg border text-xs shadow-lg {% if message.tags == 'error' %}bg-rose-950/90 border-rose-600/40 text-rose-200{% elif message.tags == 'success' %}bg-blue-950/90 border-blue-600/40 text-blue-200{% else %}bg-slate-900 border-slate-700 text-slate-200{% endif %}">
+            <div class="flex items-center space-x-2.5">
+                <span
+                    class="w-2 h-2 rounded-full shrink-0 {% if message.tags == 'error' %}bg-rose-400{% else %}bg-blue-400{% endif %}"></span>
+                <span>{{ message }}</span>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()"
+                class="text-slate-400 hover:text-white text-xs font-semibold">✕</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Header / Navbar Técnico -->
+    <header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-30">
+        <div
+            class="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+
+            <!-- Título e Identidad -->
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'landing' %}"
+                    class="w-9 h-9 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-blue-400 hover:border-blue-500 transition"
+                    title="Ir a la Landing Page">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                </a>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="text-base font-bold tracking-tight text-white">Brazo Robot &bull; Monitoreo de
+                            Residuos en Tiempo Real</h1>
+                        <span
+                            class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <span class="w-1.5 h-1.5 mr-1 bg-emerald-400 rounded-full animate-ping"></span>
+                            ACTIVO
+                        </span>
+                    </div>
+                    <p class="text-slate-400 text-xs mt-0.5">Visor de clasificaciones enviadas desde el cliente de
+                        escritorio</p>
+                </div>
+            </div>
+
+            <!-- Panel de Usuario y Cerrar Sesión -->
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'landing' %}"
+                    class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 bg-slate-900 hover:bg-slate-800 border border-slate-800 transition">
+                    <svg class="w-3.5 h-3.5 mr-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Ver Inicio
+                </a>
+
+                <!-- Perfil del Usuario Autenticado -->
+                <div
+                    class="flex items-center space-x-2.5 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs">
+                    <div
+                        class="w-6 h-6 rounded bg-slate-800 text-blue-400 font-bold flex items-center justify-center text-[11px] font-mono uppercase">
+                        {{ request.user.username|slice:":2" }}
+                    </div>
+                    <div class="text-left">
+                        <p class="text-xs font-semibold text-white leading-tight font-mono">
+                            {{ request.user.first_name|default:request.user.username }}
+                        </p>
+                        <div class="flex items-center space-x-1">
+                            <span class="text-[9px] uppercase font-mono px-1 rounded bg-slate-800 text-slate-400">
+                                {{ request.user.get_role_display|default:request.user.role }}
+                            </span>
+                            {% if request.user.phone %}
+                            <span class="text-[9px] text-slate-500 font-mono hidden md:inline">&bull; {{
+                                request.user.phone }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón de Cerrar Sesión -->
+                <a href="{% url 'logout' %}" id="logout-button"
+                    class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium text-rose-300 bg-rose-950/50 hover:bg-rose-900/50 border border-rose-800/40 transition">
+                    <svg class="w-3.5 h-3.5 mr-1 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-5 flex-1">
+
+        <!-- Métricas Rápidas -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Total -->
+            <div class="bg-slate-900 rounded-xl p-5 border border-slate-800">
+                <p class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Total Detecciones</p>
+                <p class="text-2xl font-bold text-white font-mono mt-1">{{ total }}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">Eventos registrados</p>
+            </div>
+
+            <!-- Orgánicos -->
+            <div class="bg-slate-900 rounded-xl p-5 border border-slate-800">
+                <p class="text-[10px] font-mono uppercase tracking-wider text-emerald-400">Orgánicos</p>
+                <p class="text-2xl font-bold text-emerald-400 font-mono mt-1">{{ organic_count|default:"0" }}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">Tolva A (Compostable)</p>
+            </div>
+
+            <!-- Inorgánicos -->
+            <div class="bg-slate-900 rounded-xl p-5 border border-slate-800">
+                <p class="text-[10px] font-mono uppercase tracking-wider text-amber-400">Inorgánicos</p>
+                <p class="text-2xl font-bold text-amber-400 font-mono mt-1">{{ inorganic_count|default:"0" }}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">Tolva B (Reciclable)</p>
+            </div>
+
+            <!-- Cámara / Estado -->
+            <div class="bg-slate-900 rounded-xl p-5 border border-slate-800">
+                <p class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Cámara / Canal</p>
+                <p class="text-base font-bold text-blue-400 font-mono mt-1 flex items-center">
+                    <span class="w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
+                    CAM_01 &bull; En Línea
+                </p>
+                <p class="text-[11px] text-slate-500 mt-0.5">API REST lista para POST</p>
+            </div>
+        </div>
+
+        <!-- Tabla de Registros -->
+        <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-sm">
+            <div
+                class="px-5 py-3.5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-slate-900/90">
+                <div>
+                    <h2 class="text-sm font-bold text-white font-mono uppercase tracking-wide">Historial Reciente de
+                        Detecciones</h2>
+                    <p class="text-xs text-slate-400">Registros ópticos sincronizados con marca de tiempo</p>
+                </div>
+                <a href="/api/detecciones/" target="_blank"
+                    class="inline-flex items-center text-xs font-mono text-blue-400 hover:text-blue-300 transition bg-slate-950 border border-slate-800 px-2.5 py-1 rounded w-fit">
+                    <span>API JSON</span>
+                    <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                </a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr
+                            class="bg-slate-950 text-slate-400 uppercase font-mono text-[10px] tracking-wider border-b border-slate-800">
+                            <th class="py-2.5 px-5">Captura</th>
+                            <th class="py-2.5 px-5">Objeto</th>
+                            <th class="py-2.5 px-5">Categoría</th>
+                            <th class="py-2.5 px-5">Confianza</th>
+                            <th class="py-2.5 px-5">Cámara</th>
+                            <th class="py-2.5 px-5">Fecha / Hora</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/80 font-mono">
+                        {% for d in detecciones %}
+                        <tr class="hover:bg-slate-800/50 transition-colors">
+                            <td class="py-2.5 px-5">
+                                {% if d.imagen %}
+                                <img src="{{ d.imagen.url }}"
+                                    class="w-10 h-10 object-cover rounded border border-slate-700 shadow-sm"
+                                    alt="captura">
+                                {% else %}
+                                <div
+                                    class="w-10 h-10 rounded bg-slate-950 border border-slate-800 flex items-center justify-center text-[9px] text-slate-500">
+                                    N/A
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="py-2.5 px-5 font-semibold text-white font-sans">{{ d.objeto }}</td>
+                            <td class="py-2.5 px-5">
+                                {% if d.categoria|lower == 'organico' %}
+                                <span
+                                    class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                                    Orgánico
+                                </span>
+                                {% else %}
+                                <span
+                                    class="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                                    Inorgánico
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="py-2.5 px-5 text-slate-300">
+                                {{ d.confianza|floatformat:2 }}
+                            </td>
+                            <td class="py-2.5 px-5 text-slate-400">{{ d.camara_id }}</td>
+                            <td class="py-2.5 px-5 text-slate-400">{{ d.fecha_registro|date:"d/m/Y H:i:s" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="py-12 text-center text-slate-500 font-sans">
+                                <svg class="w-10 h-10 mx-auto mb-2 text-slate-700" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4">
+                                    </path>
+                                </svg>
+                                <p class="text-slate-300 font-semibold text-xs">Aún no se han recibido detecciones</p>
+                                <p class="text-[11px] text-slate-500 mt-0.5">El cliente de escritorio transmitirá las
+                                    capturas en tiempo real.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer Técnico -->
+    <footer class="bg-slate-950 border-t border-slate-800/80 py-4 text-slate-500 text-xs font-mono text-center mt-auto">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>Brazo Robot &bull; Usuario activo: <span class="text-slate-300">{{ request.user.username }}</span> ({{
+                request.user.get_role_display|default:request.user.role }})</p>
+        </div>
+    </footer>
+
+</body>
+
+</html>

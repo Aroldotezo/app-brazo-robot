@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brazo Robot | Robot clasificador manejado por IA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Inter"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        tech: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#090d16',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body
+    class="bg-slate-950 text-slate-200 font-sans antialiased selection:bg-blue-600 selection:text-white min-h-screen flex flex-col">
+
+    {% if messages %}
+    <div class="fixed top-20 right-6 z-50 space-y-2 max-w-md">
+        {% for message in messages %}
+        <div
+            class="flex items-center p-3.5 rounded-lg border text-xs shadow-xl {% if message.tags == 'error' %}bg-rose-950/90 border-rose-600/40 text-rose-200{% elif message.tags == 'success' %}bg-blue-950/90 border-blue-600/40 text-blue-200{% else %}bg-slate-900 border-slate-700 text-slate-200{% endif %}">
+            <span
+                class="w-2 h-2 rounded-full mr-2.5 shrink-0 {% if message.tags == 'error' %}bg-rose-400{% else %}bg-blue-400{% endif %}"></span>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <header class="fixed top-0 inset-x-0 z-40 bg-slate-950/90 backdrop-blur border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="{% url 'landing' %}" class="flex items-center space-x-3 group">
+                    <div
+                        class="w-9 h-9 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-blue-400 group-hover:border-blue-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-base font-bold tracking-tight text-white">Brazo Robot</span>
+                            <span
+                                class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700">v1.0</span>
+                        </div>
+                        <span class="text-[11px] text-slate-400 block font-normal leading-none mt-0.5">Robot
+                            clasificador manejado por IA</span>
+                    </div>
+                </a>
+
+                <nav class="hidden md:flex items-center space-x-6 text-xs font-medium text-slate-400">
+                    <a href="#arquitectura" class="hover:text-white transition-colors">Arquitectura</a>
+                    <a href="#clasificacion" class="hover:text-white transition-colors">Clasificación</a>
+                    <a href="#telemetria" class="hover:text-white transition-colors">Telemetría</a>
+                    <a href="/api/detecciones/" target="_blank"
+                        class="hover:text-blue-400 transition-colors flex items-center">
+                        <span>API</span>
+                        <svg class="w-3 h-3 ml-1 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                    </a>
+                </nav>
+
+                <div class="flex items-center space-x-3">
+                    {% if user.is_authenticated %}
+                    <div
+                        class="hidden sm:flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-lg py-1 px-2.5 text-xs">
+                        <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                        <span class="text-slate-300 font-mono text-[11px]">
+                            {{ user.first_name|default:user.username}}</span>
+                        <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-mono">
+                            {{ user.get_role_display|default:user.role }}
+                        </span>
+                    </div>
+                    <a href="{% url 'dashboard' %}"
+                        class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 border border-blue-500/40 transition">
+                        <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                        Panel de Control
+                    </a>
+                    <a href="{% url 'logout' %}" class="text-slate-400 hover:text-rose-400 p-1.5 transition"
+                        title="Cerrar Sesión">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                    </a>
+                    {% else %}
+                    <a href="{% url 'login' %}" id="nav-login-btn"
+                        class="inline-flex items-center px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 border border-blue-500/30 transition shadow-sm">
+                        <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                        </svg>
+                        Iniciar Sesión
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="h-16"></div>
+
+    <section class="py-12 sm:py-16 border-b border-slate-800 bg-slate-950">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+
+                <div class="lg:col-span-7 space-y-6">
+                    <div
+                        class="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300 font-mono text-[11px]">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        SISTEMA MECATRÓNICO &bull; CONTROL POR IA
+                    </div>
+
+                    <div class="space-y-2">
+                        <h1
+                            class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
+                            Brazo Robot
+                        </h1>
+                        <p class="text-xl sm:text-2xl font-semibold text-blue-400">
+                            Robot clasificador manejado por IA
+                        </p>
+                    </div>
+
+                    <p class="text-sm sm:text-base text-slate-400 max-w-xl font-normal leading-relaxed">
+                        Sistema automatizado que integra detección óptica en tiempo real con accionamiento mecatrónico
+                        para la segregación física de residuos en categorías <strong
+                            class="text-slate-200">orgánica</strong> e <strong
+                            class="text-slate-200">inorgánica</strong>.
+                    </p>
+
+                    <div class="flex flex-wrap items-center gap-3 pt-1">
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'dashboard' %}"
+                            class="inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 border border-blue-500/40 transition">
+                            Acceder al Panel de Monitoreo
+                            <svg class="w-3.5 h-3.5 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                        </a>
+                        {% else %}
+                        <a href="{% url 'login' %}" id="hero-login-btn"
+                            class="inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 border border-blue-500/40 transition">
+                            Iniciar Sesión en el Sistema
+                            <svg class="w-3.5 h-3.5 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                        </a>
+                        {% endif %}
+                        <a href="#arquitectura"
+                            class="inline-flex items-center justify-center px-4 py-2.5 rounded-lg text-xs font-medium text-slate-300 bg-slate-900 hover:bg-slate-800 border border-slate-800 transition">
+                            Especificaciones Técnicas
+                        </a>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 pt-4 border-t border-slate-800/80 max-w-lg">
+                        <div>
+                            <p class="text-[11px] uppercase tracking-wider text-slate-500 font-mono">Inferencia</p>
+                            <p class="text-base font-bold text-white font-mono mt-0.5">YOLO Óptico</p>
+                        </div>
+                        <div>
+                            <p class="text-[11px] uppercase tracking-wider text-slate-500 font-mono">Actuador</p>
+                            <p class="text-base font-bold text-white font-mono mt-0.5">Brazo Robótico</p>
+                        </div>
+                        <div>
+                            <p class="text-[11px] uppercase tracking-wider text-slate-500 font-mono">Enlace</p>
+                            <p class="text-base font-bold text-blue-400 font-mono mt-0.5">API REST / Serial</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5">
+                    <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-2xl">
+                        <div
+                            class="bg-slate-950 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs font-mono">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span class="text-slate-300 font-semibold">TERMINAL DE ADQUISICIÓN</span>
+                            </div>
+                            <span class="text-slate-500 text-[11px]">DISPOSITIVO: CAM_01</span>
+                        </div>
+
+                        <div class="p-4 space-y-3">
+                            <div
+                                class="aspect-[16/10] bg-slate-950 rounded-lg border border-slate-800 p-3 relative flex flex-col justify-between overflow-hidden">
+                                <div
+                                    class="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:24px_24px] opacity-20">
+                                </div>
+
+                                <div
+                                    class="relative z-10 flex items-center justify-between text-[11px] font-mono text-slate-400">
+                                    <span>CANAL: 01</span>
+                                    <span class="text-blue-400">FPS: 30.0 &bull; 720p</span>
+                                </div>
+
+                                <div
+                                    class="relative z-10 mx-auto w-40 h-28 border border-blue-500/80 bg-blue-500/5 rounded p-2 flex flex-col justify-between">
+                                    <div class="flex items-center justify-between text-[10px] font-mono">
+                                        <span class="bg-blue-600 text-white px-1 rounded font-bold">lata</span>
+                                    </div>
+                                    <div class="text-center text-slate-600 font-mono text-[10px]">
+                                        [X: 320, Y: 240]
+                                    </div>
+                                    <div
+                                        class="text-[10px] font-mono bg-slate-900/90 border border-slate-800 px-1.5 py-0.5 rounded text-amber-300 flex justify-between">
+                                        <span>Clase:</span>
+                                        <span class="font-bold">INORGÁNICO</span>
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="relative z-10 flex items-center justify-between text-[11px] font-mono bg-slate-900/80 px-2 py-1 rounded border border-slate-800">
+                                    <span class="text-slate-400">Brazo: Esperando material</span>
+                                    <span class="text-emerald-400 font-semibold">SINCRONIZADO</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+                                <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                                    <p class="text-[10px] text-slate-500 uppercase">Detecciones Registradas</p>
+                                    <p class="text-lg font-bold text-white mt-0.5">{{ total_detections|default:"0" }}
+                                    </p>
+                                </div>
+                                <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                                    <p class="text-[10px] text-slate-500 uppercase">Estado Mecánico</p>
+                                    <p class="text-xs font-bold text-emerald-400 mt-1 flex items-center">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span>
+                                        Listo para Operar
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section id="arquitectura" class="py-14 border-b border-slate-800 bg-slate-900/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl mb-10">
+                <span class="text-blue-400 font-mono text-xs uppercase tracking-wider font-semibold">
+                    Arquitectura del Sistema
+                </span>
+                <h2 class="text-2xl sm:text-3xl font-bold text-white tracking-tight mt-1">
+                    Componentes del Proceso Automatizado
+                </h2>
+                <p class="text-slate-400 text-sm mt-2">
+                    Estructura modular, procesamiento neuronal y ejecución mecatrónica.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                <div class="bg-slate-900 rounded-xl p-6 border border-slate-800 hover:border-slate-700 transition">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs font-mono text-slate-500">MÓDULO 01</span>
+                        <span
+                            class="w-7 h-7 rounded bg-slate-800 text-blue-400 flex items-center justify-center text-xs font-mono font-bold">
+                            CAM
+                        </span>
+                    </div>
+                    <h3 class="text-base font-bold text-white mb-2">Visión Artificial en Tiempo Real</h3>
+                    <p class="text-slate-400 text-xs leading-relaxed">
+                        Cámara óptica que captura imágenes continuas
+                        para identificar el tipo de residuo.
+                    </p>
+                    <div class="mt-4 pt-4 border-t border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
+                        <p>&bull; Dispositivo asignado: CAM_01</p>
+                        <p>&bull; Transmisión por socket</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 rounded-xl p-6 border border-slate-800 hover:border-slate-700 transition">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs font-mono text-slate-500">MÓDULO 02</span>
+                        <span
+                            class="w-7 h-7 rounded bg-slate-800 text-blue-400 flex items-center justify-center text-xs font-mono font-bold">
+                            RED
+                        </span>
+                    </div>
+                    <h3 class="text-base font-bold text-white mb-2">Clasificación por IA</h3>
+                    <p class="text-slate-400 text-xs leading-relaxed">
+                        Modelo de red neuronal que analiza la imagen capturada y genera la categorización entre material
+                        orgánico, inorgánico y defectuoso.
+                    </p>
+                    <div class="mt-4 pt-4 border-t border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
+                        <p>&bull; Inferencia en milisegundos</p>
+                        <p>&bull; Filtro por umbral de confianza</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 rounded-xl p-6 border border-slate-800 hover:border-slate-700 transition">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs font-mono text-slate-500">MÓDULO 03</span>
+                        <span
+                            class="w-7 h-7 rounded bg-slate-800 text-blue-400 flex items-center justify-center text-xs font-mono font-bold">
+                            ACT
+                        </span>
+                    </div>
+                    <h3 class="text-base font-bold text-white mb-2">Accionamiento del Brazo Robótico</h3>
+                    <p class="text-slate-400 text-xs leading-relaxed">
+                        Mecanismo servoasistido que recibe la instrucción de clasificación y ejecuta la desviación
+                        física del residuo hacia el espacio correspondiente.
+                    </p>
+                    <div class="mt-4 pt-4 border-t border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
+                        <p>&bull; Cinemática directa y control angular</p>
+                        <p>&bull; Separación física inmediata</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section id="clasificacion" class="py-14 border-b border-slate-800 bg-slate-950">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl mb-8">
+                <span class="text-blue-400 font-mono text-xs uppercase tracking-wider font-semibold">
+                    Categorización
+                </span>
+                <h2 class="text-2xl sm:text-3xl font-bold text-white tracking-tight mt-1">
+                    Criterios de Separación de Materiales
+                </h2>
+                <p class="text-slate-400 text-sm mt-2">
+                    El sistema clasifica cada objeto identificado en tres flujos mecánicos definidos:
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                <div class="bg-slate-900 rounded-xl p-6 border border-slate-800">
+                    <div class="flex items-center justify-between mb-3">
+                        <span
+                            class="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wide flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2"></span>
+                            Categoría Orgánica
+                        </span>
+                        <span class="text-xs font-mono text-slate-500">Tolva A</span>
+                    </div>
+                    <h3 class="text-base font-semibold text-white mb-2">Materia Orgánica</h3>
+                    <p class="text-slate-400 text-xs mb-4 leading-relaxed">
+                        Residuos orgánicos destinados a compostaje o procesamiento orgánico.
+                    </p>
+                    <div
+                        class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs font-mono text-slate-300 space-y-1">
+                        <p>&bull; Restos de frutas y verduras</p>
+                        <p>&bull; Cáscaras y desechos orgánicos</p>
+                        <p>&bull; Restos biológicos</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 rounded-xl p-6 border border-slate-800">
+                    <div class="flex items-center justify-between mb-3">
+                        <span
+                            class="text-xs font-mono font-bold text-slate-400 uppercase tracking-wide flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-slate-400 mr-2"></span>
+                            Categoría Defectuoso
+                        </span>
+                        <span class="text-xs font-mono text-slate-500">Tolva B</span>
+                    </div>
+                    <h3 class="text-base font-semibold text-white mb-2">Materiales Defectuosos</h3>
+                    <p class="text-slate-400 text-xs mb-4 leading-relaxed">
+                        Residuos que no pudieron ser clasificados por el sistema
+                    </p>
+                    <div
+                        class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs font-mono text-slate-300 space-y-1">
+                        <p>&bull; Materiales no identificados</p>
+                        <p>&bull; Materiales no clasificables</p>
+                        <p>&bull; Material en mal estado</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 rounded-xl p-6 border border-slate-800">
+                    <div class="flex items-center justify-between mb-3">
+                        <span
+                            class="text-xs font-mono font-bold text-amber-400 uppercase tracking-wide flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-amber-400 mr-2"></span>
+                            Categoría Inorgánica
+                        </span>
+                        <span class="text-xs font-mono text-slate-500">Tolva C</span>
+                    </div>
+                    <h3 class="text-base font-semibold text-white mb-2">Materiales Inorgánicos</h3>
+                    <p class="text-slate-400 text-xs mb-4 leading-relaxed">
+                        Residuos inorgánicos aptos para reciclaje y reutilización.
+                    </p>
+                    <div
+                        class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs font-mono text-slate-300 space-y-1">
+                        <p>&bull; Botellas y envases de plástico</p>
+                        <p>&bull; Latas de aluminio y metales</p>
+                        <p>&bull; Cartón, papel y empaques</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section id="telemetria" class="py-14 bg-slate-900/30 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div
+                class="bg-slate-900 rounded-2xl p-8 border border-slate-800 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div>
+                    <span class="text-blue-400 font-mono text-xs uppercase tracking-wider font-semibold">
+                        Control y Auditoría
+                    </span>
+                    <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight mt-1">
+                        Panel de Supervisión en Tiempo Real
+                    </h2>
+                    <p class="text-slate-400 text-xs sm:text-sm mt-1 max-w-xl">
+                        Los usuarios pueden ingresar para ver el registro fotográfico en vivo,
+                        estadísticas por categoría y estado.
+                    </p>
+                </div>
+                <div class="shrink-0 flex items-center space-x-3">
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}"
+                        class="px-5 py-2.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 transition shadow-sm">
+                        Ir al Panel de Monitoreo &rarr;
+                    </a>
+                    {% else %}
+                    <a href="{% url 'login' %}" id="cta-login-btn"
+                        class="px-5 py-2.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 transition shadow-sm">
+                        Iniciar Sesión como Operador &rarr;
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="mt-auto bg-slate-950 py-8 text-slate-500 text-xs border-t border-slate-800/80">
+        <div
+            class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <span class="font-bold text-slate-300">Brazo Robot</span>
+                <span class="text-slate-600">&bull;</span>
+                <span>Robot clasificador manejado por IA</span>
+            </div>
+
+            <p class="text-slate-600">
+                &copy; 2026 Brazo Robot. Todos los derechos reservados.
+            </p>
+        </div>
+    </footer>
+
+</body>
+
+</html>
