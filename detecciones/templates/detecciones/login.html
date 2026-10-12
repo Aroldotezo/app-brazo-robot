@@ -1,16 +1,17 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión | Brazo Robot</title>
     <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
-    <!-- Google Fonts: Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS CDN -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -25,25 +26,27 @@
         }
     </script>
 </head>
-<body class="bg-slate-950 text-slate-200 font-sans antialiased min-h-screen flex items-center justify-center p-4 selection:bg-blue-600 selection:text-white">
+
+<body
+    class="bg-slate-950 text-slate-200 font-sans antialiased min-h-screen flex items-center justify-center p-4 selection:bg-blue-600 selection:text-white">
 
     <div class="w-full max-w-md space-y-5">
 
-        <!-- Volver a la Landing Page -->
         <div>
-            <a href="{% url 'landing' %}" class="inline-flex items-center text-xs font-medium text-slate-400 hover:text-white transition-colors">
+            <a href="{% url 'landing' %}"
+                class="inline-flex items-center text-xs font-medium text-slate-400 hover:text-white transition-colors">
                 <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
                 Volver a la página principal
             </a>
         </div>
 
-        <!-- Tarjeta de Login Técnica -->
         <div class="bg-slate-900 rounded-xl p-8 border border-slate-800 shadow-2xl">
-            <!-- Encabezado de la Tarjeta -->
             <div class="text-center space-y-2 mb-6">
-                <div class="w-16 h-16 mx-auto rounded-2xl bg-black border border-slate-800 p-2 flex items-center justify-center shadow-lg">
+                <div
+                    class="w-16 h-16 mx-auto rounded-2xl bg-black border border-slate-800 p-2 flex items-center justify-center shadow-lg">
                     <img src="{% static 'img/logo.png' %}" alt="Brazo Robot Logo" class="w-full h-full object-contain">
                 </div>
                 <div>
@@ -52,26 +55,28 @@
                 </div>
             </div>
 
-            <!-- Alerta de Errores de Validación -->
             {% if form.errors %}
-            <div class="mb-5 p-3.5 rounded-lg bg-rose-950/80 border border-rose-600/40 text-rose-200 text-xs flex items-start space-x-2.5">
-                <svg class="w-4 h-4 text-rose-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            <div
+                class="mb-5 p-3.5 rounded-lg bg-rose-950/80 border border-rose-600/40 text-rose-200 text-xs flex items-start space-x-2.5">
+                <svg class="w-4 h-4 text-rose-400 shrink-0 mt-0.5" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <div class="space-y-0.5">
                     <p class="font-semibold text-rose-300">Error de autenticación</p>
                     {% if form.non_field_errors %}
-                        {% for error in form.non_field_errors %}
-                            <p class="text-rose-200/90 leading-tight">{{ error }}</p>
-                        {% endfor %}
+                    {% for error in form.non_field_errors %}
+                    <p class="text-rose-200/90 leading-tight">{{ error }}</p>
+                    {% endfor %}
                     {% else %}
-                        <p class="text-rose-200/90 leading-tight">Usuario o contraseña incorrectos. Por favor revise sus credenciales.</p>
+                    <p class="text-rose-200/90 leading-tight">Usuario o contraseña incorrectos. Por favor revise sus
+                        credenciales.</p>
                     {% endif %}
                 </div>
             </div>
             {% endif %}
 
-            <!-- Formulario de Autenticación -->
             <form method="POST" action="{% url 'login' %}" class="space-y-4" novalidate>
                 {% csrf_token %}
 
@@ -79,90 +84,45 @@
                 <input type="hidden" name="next" value="{{ request.GET.next }}">
                 {% endif %}
 
-                <!-- Campo de Usuario -->
                 <div class="space-y-1">
                     <label for="username_input" class="block text-xs font-medium text-slate-300 font-mono">
                         USUARIO
                     </label>
                     <div class="relative">
-                        <input type="text"
-                               name="username"
-                               id="username_input"
-                               autofocus
-                               required
-                               placeholder="Ej. lolo o pablito"
-                               value="{{ form.username.value|default:'' }}"
-                               class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 transition">
+                        <input type="text" name="username" id="username_input" autofocus required
+                            placeholder="Ej. usuario" value="{{ form.username.value|default:'' }}"
+                            class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 transition">
                     </div>
                 </div>
 
-                <!-- Campo de Contraseña -->
                 <div class="space-y-1">
                     <label for="password_input" class="block text-xs font-medium text-slate-300 font-mono">
                         CONTRASEÑA
                     </label>
                     <div class="relative">
-                        <input type="password"
-                               name="password"
-                               id="password_input"
-                               required
-                               placeholder="••••••••"
-                               class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 transition">
+                        <input type="password" name="password" id="password_input" required placeholder="••••••••"
+                            class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 transition">
                     </div>
                 </div>
 
-                <!-- Botón de Envío -->
                 <div class="pt-2">
-                    <button type="submit"
-                            id="submit-login-button"
-                            class="w-full py-2.5 px-4 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 transition flex items-center justify-center space-x-2 shadow-sm">
+                    <button type="submit" id="submit-login-button"
+                        class="w-full py-2.5 px-4 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 transition flex items-center justify-center space-x-2 shadow-sm">
                         <span>Iniciar Sesión</span>
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14 5l7 7m0 0l-7 7m7-7H3" />
                         </svg>
                     </button>
                 </div>
             </form>
-
-            <!-- Acceso Rápido para Pruebas (Credenciales Semilla) -->
-            <div class="mt-6 pt-5 border-t border-slate-800">
-                <p class="text-[11px] font-mono text-slate-500 mb-2.5 text-center uppercase">
-                    Cuentas de Prueba Preconfiguradas
-                </p>
-                <div class="grid grid-cols-2 gap-2 text-xs">
-                    <!-- Administrador -->
-                    <button type="button"
-                            onclick="fillCredentials('lolo', 'admin123')"
-                            class="p-2.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition group">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="font-bold text-white group-hover:text-blue-400 font-mono">lolo</span>
-                            <span class="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">Admin</span>
-                        </div>
-                        <p class="text-[10px] text-slate-500 font-mono">admin123</p>
-                    </button>
-
-                    <!-- Operador -->
-                    <button type="button"
-                            onclick="fillCredentials('pablito', 'admin123')"
-                            class="p-2.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition group">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="font-bold text-white group-hover:text-blue-400 font-mono">pablito</span>
-                            <span class="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">Operador</span>
-                        </div>
-                        <p class="text-[10px] text-slate-500 font-mono">admin123</p>
-                    </button>
-                </div>
-                <p class="text-[10px] text-slate-600 text-center mt-2">Haz clic para autocompletar</p>
-            </div>
         </div>
 
-        <!-- Footer -->
         <p class="text-center text-xs text-slate-500 font-mono">
             Brazo Robot &bull; Hashing Bcrypt
         </p>
     </div>
 
-    <!-- Script de autocompletado -->
     <script>
         function fillCredentials(username, password) {
             document.getElementById('username_input').value = username;
@@ -170,4 +130,5 @@
         }
     </script>
 </body>
+
 </html>
