@@ -84,7 +84,7 @@
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
                         <a href="{% url 'landing' %}"
-                            class="w-10 h-10 rounded-lg bg-white/95 border border-slate-700 p-1 flex items-center justify-center hover:border-blue-400 hover:scale-105 transition shadow-sm shrink-0"
+                            class="w-10 h-10 rounded-lg bg-black border border-slate-800 p-1 flex items-center justify-center hover:border-blue-400 hover:scale-105 transition shadow-sm shrink-0"
                             title="Ir a la Landing Page">
                             <img src="{% static 'img/logo.png' %}" alt="Logo Brazo Robot"
                                 class="w-full h-full object-contain">
@@ -443,7 +443,7 @@
     <!-- Footer Técnico -->
     <footer class="bg-slate-950 border-t border-slate-800/80 py-4 text-slate-500 text-xs font-mono mt-auto">
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-center gap-2.5">
-            <div class="w-5 h-5 rounded bg-white/95 p-0.5 flex items-center justify-center shrink-0 shadow-xs">
+            <div class="w-5 h-5 rounded bg-black border border-slate-800 p-0.5 flex items-center justify-center shrink-0 shadow-xs">
                 <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-full h-full object-contain">
             </div>
             <p>Brazo Robot &bull; Monitoreo Activo &bull; Usuario: <span class="text-slate-300">{{ request.user.username
