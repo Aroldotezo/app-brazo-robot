@@ -1,0 +1,39 @@
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# Python byte-code and cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Django environment & local database
+db.sqlite3
+db.sqlite3-journal
+.env
+local_settings.py
+
+# Media files uploaded by users
+media/capturas/
+media/cache/
+
+# Static files collected for production
+staticfiles/
+
+# IDE and Editor configurations
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Test coverage & logs
+*.log
+.coverage
+htmlcov/
+.pytest_cache/
