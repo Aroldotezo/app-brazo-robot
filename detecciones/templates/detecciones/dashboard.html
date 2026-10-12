@@ -85,8 +85,7 @@
                         </a>
                         <div>
                             <div class="flex flex-wrap items-center gap-2">
-                                <h1 class="text-sm sm:text-base font-bold tracking-tight text-white">Brazo Robot &bull;
-                                    Monitoreo de Residuos en Tiempo Real</h1>
+                                <h1 class="text-sm sm:text-base font-bold tracking-tight text-white">Brazo Robot</h1>
                                 <span id="server-status-pill"
                                     class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                                     <span class="w-1.5 h-1.5 mr-1 bg-emerald-400 rounded-full animate-ping"></span>
@@ -418,7 +417,7 @@
                 class="w-5 h-5 rounded bg-black border border-slate-800 p-0.5 flex items-center justify-center shrink-0 shadow-xs">
                 <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-full h-full object-contain">
             </div>
-            <p>Brazo Robot &bull; Monitoreo Activo &bull; Usuario: <span class="text-slate-300">{{request.user.username}}</span> ({{request.user.get_role_display|default:request.user.role}})</p>
+            <p>Brazo Robot &bull; Usuario: <span class="text-slate-300">{{request.user.username}}</span> ({{request.user.get_role_display|default:request.user.role}})</p>
         </div>
     </footer>
 
