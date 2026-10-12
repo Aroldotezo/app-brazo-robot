@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.db.models import Q
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.permissions import AllowAny
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
@@ -17,11 +18,14 @@ class DeteccionViewSet(ModelViewSet):
     """
     REST API endpoint to receive and list detection logs from the desktop classification client.
     Supports multipart form data, application/json (including base64 images), and standard forms.
+    Bypasses web session CSRF authentication to allow direct HTTP POST from desktop clients.
     Broadcasts newly created detection records to connected WebSocket clients in real time.
     """
     queryset = Deteccion.objects.all().order_by('-fecha_registro')
     serializer_class = DeteccionSerializer
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
         instance = serializer.save()

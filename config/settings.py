@@ -26,10 +26,26 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-ejwgxo4a6a6h#q_xgr1#e
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True').lower() in ['true', '1', 'yes']
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    '*',
+    'app-brazo-robot.onrender.com',
+    'localhost',
+    '127.0.0.1',
+]
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# CSRF Trusted Origins for Render and local development
+CSRF_TRUSTED_ORIGINS = [
+    'https://app-brazo-robot.onrender.com',
+    'https://*.onrender.com',
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+]
+
+# CORS configuration
+CORS_ALLOW_ALL_ORIGINS = True
 
 
 # Application definition
@@ -60,6 +76,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
