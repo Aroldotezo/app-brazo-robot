@@ -229,23 +229,50 @@
                     <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
                         <p class="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Última Detección
                         </p>
+                        {% if latest %}
+                            {% if latest.categoria|lower == 'organico' or latest.categoria|lower == 'orgánico' %}
+                            <span id="latest-category-badge"
+                                class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                                ORGÁNICO
+                            </span>
+                            {% elif latest.categoria|lower == 'defectuoso' or latest.categoria|lower == 'defectuosa' %}
+                            <span id="latest-category-badge"
+                                class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                                DEFECTUOSO
+                            </span>
+                            {% else %}
+                            <span id="latest-category-badge"
+                                class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                                INORGÁNICO
+                            </span>
+                            {% endif %}
+                        {% else %}
                         <span id="latest-category-badge"
                             class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-slate-800 text-slate-400 border border-slate-700">
                             EN ESPERA
                         </span>
+                        {% endif %}
                     </div>
 
                     <div class="flex items-center space-x-3.5">
                         <div id="latest-image-container"
                             class="w-16 h-16 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0 overflow-hidden">
+                            {% if latest and latest.imagen %}
+                            <img src="{{ latest.imagen.url }}" alt="{{ latest.objeto }}" class="w-full h-full object-cover">
+                            {% else %}
                             <span class="text-[10px] font-mono text-slate-600">SIN FOTO</span>
+                            {% endif %}
                         </div>
                         <div class="min-w-0 flex-1">
-                            <p id="latest-object-name" class="text-base font-bold text-white truncate">Ninguna detección
+                            <p id="latest-object-name" class="text-base font-bold text-white truncate">
+                                {{ latest.objeto|default:"Ninguna detección" }}
                             </p>
-                            <p id="latest-confidence-text" class="text-xs font-mono text-slate-400 mt-0.5">Confianza:
-                                --%</p>
-                            <p id="latest-timestamp-text" class="text-[11px] text-slate-500 font-mono mt-0.5">--</p>
+                            <p id="latest-confidence-text" class="text-xs font-mono text-slate-400 mt-0.5">
+                                Confianza: {% if latest %}{{ latest.confianza|floatformat:2 }}{% else %}--%{% endif %}
+                            </p>
+                            <p id="latest-timestamp-text" class="text-[11px] text-slate-500 font-mono mt-0.5">
+                                {% if latest %}{{ latest.fecha_registro|date:"d/m/Y H:i:s" }}{% else %}--{% endif %}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -278,7 +305,7 @@
                 <p class="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-slate-400">Total
                     Detecciones</p>
                 <p id="metric-total-count" class="text-2xl sm:text-3xl font-extrabold text-white font-mono mt-1">
-                    {{total }}</p>
+                    {{ total }}</p>
                 <p class="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">Eventos en base de datos</p>
             </div>
 
@@ -286,7 +313,7 @@
                 <p class="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-emerald-400">Orgánicos</p>
                 <p id="metric-organic-count"
                     class="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono mt-1">
-                    {{organic_count|default:"0" }}</p>
+                    {{ organic_count|default:"0" }}</p>
                 <p class="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">Tolva A (Compostaje)</p>
             </div>
 
@@ -294,18 +321,19 @@
                 <p class="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-amber-400">Inorgánicos</p>
                 <p id="metric-inorganic-count"
                     class="text-2xl sm:text-3xl font-extrabold text-amber-400 font-mono mt-1">
-                    {{inorganic_count|default:"0" }}</p>
+                    {{ inorganic_count|default:"0" }}</p>
                 <p class="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">Tolva B (Reciclable)</p>
             </div>
 
             <div class="bg-slate-900 rounded-xl p-4 sm:p-5 border border-slate-800">
-                <p class="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-slate-400">Cámara Activa
-                </p>
-                <p class="text-lg sm:text-xl font-bold text-blue-400 font-mono mt-1 flex items-center">
-                    <span class="w-2 h-2 rounded-full bg-blue-500 mr-2 shrink-0"></span>
-                    CAM_01
-                </p>
-                <p class="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">Recepción de imágenes POST</p>
+                <div class="flex items-center justify-between">
+                    <p class="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-rose-400">Defectuosos</p>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">CAM_01</span>
+                </div>
+                <p id="metric-defective-count"
+                    class="text-2xl sm:text-3xl font-extrabold text-rose-400 font-mono mt-1">
+                    {{ defective_count|default:"0" }}</p>
+                <p class="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">Tolva C &bull; Rechazo</p>
             </div>
         </section>
 
@@ -373,6 +401,11 @@
                                 <span
                                     class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                                     Orgánico
+                                </span>
+                                {% elif d.categoria|lower == 'defectuoso' or d.categoria|lower == 'defectuosa' %}
+                                <span
+                                    class="px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                                    Defectuoso
                                 </span>
                                 {% else %}
                                 <span
@@ -523,6 +556,7 @@
         const metricTotal = document.getElementById('metric-total-count');
         const metricOrganic = document.getElementById('metric-organic-count');
         const metricInorganic = document.getElementById('metric-inorganic-count');
+        const metricDefective = document.getElementById('metric-defective-count');
 
         // Latest Detection Card Elements
         const latestObjectName = document.getElementById('latest-object-name');
@@ -683,10 +717,22 @@
          */
         function handleNewDetectionReceived(d) {
             const objectName = d.objeto || "Objeto";
-            const category = (d.categoria || "inorganico").toLowerCase();
+            const category = (d.categoria || "inorganico").toLowerCase().trim();
             const confidencePercent = Math.round((d.confianza || 0) * 100);
-            const isOrganic = category === 'organico';
-            const categoryLabel = isOrganic ? 'Orgánico' : 'Inorgánico';
+            
+            const isOrganic = category === 'organico' || category === 'orgánico';
+            const isDefective = category === 'defectuoso' || category === 'defectuosa';
+            
+            let categoryLabel = 'Inorgánico';
+            let badgeClass = 'bg-amber-500/10 text-amber-400 border border-amber-500/30';
+            
+            if (isOrganic) {
+                categoryLabel = 'Orgánico';
+                badgeClass = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
+            } else if (isDefective) {
+                categoryLabel = 'Defectuoso';
+                badgeClass = 'bg-rose-500/10 text-rose-400 border border-rose-500/30';
+            }
 
             // 1. Trigger Toast Notification
             Toast.success(`¡Detección en vivo! <strong>${escapeHtml(objectName)}</strong> &bull; ${categoryLabel} (${confidencePercent}%)`, 5000);
@@ -703,9 +749,7 @@
                 ? `<img src="${d.imagen_url}" data-url="${d.imagen_url}" data-caption="${escapeHtml(objectName)} - ${escapeHtml(d.fecha_registro || 'En vivo')}" onclick="openImageModal(this.dataset.url, this.dataset.caption)" class="w-10 h-10 object-cover rounded border border-slate-700 shadow-sm cursor-pointer hover:border-blue-400 transition" alt="captura">`
                 : `<div class="w-10 h-10 rounded bg-slate-950 border border-slate-800 flex flex-col items-center justify-center text-[9px] text-slate-500 font-sans" title="Sin captura"><svg class="w-3.5 h-3.5 text-slate-600 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><span>Sin foto</span></div>`;
 
-            const badgeHtml = isOrganic
-                ? `<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Orgánico</span>`
-                : `<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">Inorgánico</span>`;
+            const badgeHtml = `<span class="px-2 py-0.5 rounded text-[11px] font-semibold ${badgeClass}">${categoryLabel}</span>`;
 
             newRow.innerHTML = `
                 <td class="py-2.5 px-4 sm:px-5">${imgHtml}</td>
@@ -726,7 +770,10 @@
             if (isOrganic && metricOrganic) {
                 const cur = parseInt(metricOrganic.textContent) || 0;
                 metricOrganic.textContent = cur + 1;
-            } else if (!isOrganic && metricInorganic) {
+            } else if (isDefective && metricDefective) {
+                const cur = parseInt(metricDefective.textContent) || 0;
+                metricDefective.textContent = cur + 1;
+            } else if (metricInorganic) {
                 const cur = parseInt(metricInorganic.textContent) || 0;
                 metricInorganic.textContent = cur + 1;
             }
@@ -738,9 +785,7 @@
 
             if (latestCategoryBadge) {
                 latestCategoryBadge.textContent = categoryLabel.toUpperCase();
-                latestCategoryBadge.className = isOrganic
-                    ? "px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-                    : "px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30";
+                latestCategoryBadge.className = `px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${badgeClass}`;
             }
 
             if (latestImageContainer && d.imagen_url) {

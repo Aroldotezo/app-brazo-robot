@@ -1,5 +1,6 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
 
 
 class CameraStreamConsumer(AsyncWebsocketConsumer):
@@ -89,11 +90,23 @@ class CameraStreamConsumer(AsyncWebsocketConsumer):
 
             # Detection event broadcast from desktop
             if msg_type == 'detection':
+                raw_data = payload.get('data', payload)
+                saved_data = await self.persist_detection_event(raw_data)
+
+                # Broadcast to camera room and global camera room
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
                         'type': 'detection_event',
-                        'data': payload.get('data', payload),
+                        'data': saved_data,
+                        'sender_channel': self.channel_name
+                    }
+                )
+                await self.channel_layer.group_send(
+                    self.global_group_name,
+                    {
+                        'type': 'detection_event',
+                        'data': saved_data,
                         'sender_channel': self.channel_name
                     }
                 )
@@ -134,3 +147,69 @@ class CameraStreamConsumer(AsyncWebsocketConsumer):
             'notification_type': event.get('notification_type', 'info'),
             'message': event.get('message', '')
         }))
+
+    @database_sync_to_async
+    def persist_detection_event(self, data):
+        """
+        Persists a detection event received via WebSocket to the database
+        if it has not already been persisted (i.e. does not have an 'id').
+        Handles optional base64 image data.
+        """
+        if isinstance(data, dict) and data.get('id'):
+            return data
+
+        import base64
+        import uuid
+        from django.core.files.base import ContentFile
+        from .models import Deteccion
+
+        if not isinstance(data, dict):
+            return data
+
+        objeto = data.get('objeto', 'Objeto detectado')
+        categoria = data.get('categoria', 'Inorgánico')
+        confianza_val = data.get('confianza', 0.9)
+        try:
+            confianza = float(confianza_val)
+        except (ValueError, TypeError):
+            confianza = 0.9
+
+        # Normalize confidence if sent as percentage (e.g. 95 -> 0.95)
+        if 1.0 < confianza <= 100.0:
+            confianza = round(confianza / 100.0, 4)
+
+        camara_id = data.get('camara_id', self.camera_id)
+
+        det = Deteccion(
+            objeto=objeto,
+            categoria=categoria,
+            confianza=confianza,
+            camara_id=camara_id,
+        )
+
+        b64_img = data.get('imagen_base64') or data.get('imagen')
+        if isinstance(b64_img, str) and (';base64,' in b64_img or b64_img.startswith('data:')):
+            try:
+                ext = 'jpg'
+                if ';base64,' in b64_img:
+                    header, b64_data = b64_img.split(';base64,', 1)
+                    if 'png' in header:
+                        ext = 'png'
+                else:
+                    b64_data = b64_img
+                decoded = base64.b64decode(b64_data)
+                det.imagen.save(f"captura_{uuid.uuid4().hex[:10]}.{ext}", ContentFile(decoded), save=False)
+            except Exception:
+                pass
+
+        det.save()
+
+        return {
+            'id': det.id,
+            'objeto': det.objeto,
+            'categoria': det.categoria,
+            'confianza': det.confianza,
+            'camara_id': det.camara_id,
+            'imagen_url': det.imagen.url if det.imagen else None,
+            'fecha_registro': det.fecha_registro.strftime('%d/%m/%Y %H:%M:%S'),
+        }

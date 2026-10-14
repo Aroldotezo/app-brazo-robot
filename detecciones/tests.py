@@ -71,8 +71,8 @@ class AuthenticationAndLandingTests(TestCase):
         }, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Lolo')
-        self.assertContains(response, 'Cerrar Sesión')
-        self.assertContains(response, 'Monitoreo de Residuos')
+        self.assertContains(response, 'Salir')
+        self.assertContains(response, 'Brazo Robot')
 
     def test_logout_redirects_to_landing_page(self):
         """Verify logout view logs user out and redirects to landing page."""
@@ -205,9 +205,45 @@ class DetectionApiAndWebSocketTests(TestCase):
         self.assertContains(response, 'Sin foto')
         self.assertContains(response, 'Cámara / Ubicación')
 
-    def test_seed_detections_command(self):
-        """Verify python manage.py seed_detections successfully creates sample records."""
-        call_command('seed_detections', clear=True)
-        self.assertGreaterEqual(Deteccion.objects.count(), 8)
-        self.assertTrue(Deteccion.objects.filter(objeto__icontains='Botella').exists())
-        self.assertTrue(Deteccion.objects.filter(objeto__icontains='Manzana').exists())
+    def test_clear_seeded_detections_and_real_persistence(self):
+        """Verify real detection records persist accurately and users remain intact."""
+        Deteccion.objects.all().delete()
+        self.assertEqual(Deteccion.objects.count(), 0)
+
+        # Create real detection
+        det = Deteccion.objects.create(
+            objeto='Botella PET Real',
+            categoria='Inorgánico',
+            confianza=0.97,
+            camara_id='CAM_01'
+        )
+        self.assertEqual(Deteccion.objects.count(), 1)
+        self.assertEqual(det.objeto, 'Botella PET Real')
+        # Verify users were not affected
+        self.assertEqual(User.objects.count(), 2)
+
+    def test_post_real_detection_with_defective_category(self):
+        """Verify POST detection with Defectuoso category persists and increments counters."""
+        payload = {
+            'objeto': 'Lata oxidada aplastada',
+            'categoria': 'Defectuoso',
+            'confianza': 0.93,
+            'camara_id': 'CAM_01'
+        }
+        response = self.client.post('/api/detecciones/', payload, format='json')
+        self.assertEqual(response.status_code, 201)
+
+        # Verify DB persistence
+        det = Deteccion.objects.get(id=response.data['id'])
+        self.assertEqual(det.objeto, 'Lata oxidada aplastada')
+        self.assertEqual(det.categoria, 'Defectuoso')
+
+        # Check dashboard context and rendering
+        user = User.objects.get(username='lolo')
+        self.client.force_login(user)
+        dash_response = self.client.get(reverse('dashboard'))
+        self.assertEqual(dash_response.status_code, 200)
+        self.assertEqual(dash_response.context['defective_count'], 1)
+        self.assertEqual(dash_response.context['latest'].objeto, 'Lata oxidada aplastada')
+        self.assertContains(dash_response, 'Defectuoso')
+        self.assertContains(dash_response, 'Lata oxidada aplastada')

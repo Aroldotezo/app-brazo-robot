@@ -33,13 +33,20 @@ class DeteccionViewSet(ModelViewSet):
         # Broadcast new detection event to WebSocket subscribers
         channel_layer = get_channel_layer()
         if channel_layer:
+            img_url = None
+            if instance.imagen:
+                try:
+                    img_url = self.request.build_absolute_uri(instance.imagen.url)
+                except Exception:
+                    img_url = instance.imagen.url
+
             event_payload = {
                 'id': instance.id,
                 'objeto': instance.objeto,
                 'categoria': instance.categoria,
                 'confianza': float(instance.confianza),
                 'camara_id': instance.camara_id,
-                'imagen_url': instance.imagen.url if instance.imagen else None,
+                'imagen_url': img_url,
                 'fecha_registro': instance.fecha_registro.strftime('%d/%m/%Y %H:%M:%S'),
             }
             async_to_sync(channel_layer.group_send)(
@@ -58,7 +65,6 @@ class DeteccionViewSet(ModelViewSet):
             )
 
 
-
 def landing_view(request):
     """
     Public landing page presenting the waste classification project,
@@ -71,11 +77,17 @@ def landing_view(request):
     inorganic_count = Deteccion.objects.filter(
         Q(categoria__iexact='inorganico') | Q(categoria__iexact='inorgánico')
     ).count()
+    defective_count = Deteccion.objects.filter(
+        Q(categoria__iexact='defectuoso') | Q(categoria__iexact='defectuosa')
+    ).count()
+    recent_detections = Deteccion.objects.all().order_by('-fecha_registro')[:6]
 
     context = {
         'total_detections': total_detections,
         'organic_count': organic_count,
         'inorganic_count': inorganic_count,
+        'defective_count': defective_count,
+        'recent_detections': recent_detections,
     }
     return render(request, 'detecciones/landing.html', context)
 
@@ -126,11 +138,18 @@ def dashboard_view(request):
     inorganic_count = Deteccion.objects.filter(
         Q(categoria__iexact='inorganico') | Q(categoria__iexact='inorgánico')
     ).count()
+    defective_count = Deteccion.objects.filter(
+        Q(categoria__iexact='defectuoso') | Q(categoria__iexact='defectuosa')
+    ).count()
+
+    latest_detection = detections.first() if detections.exists() else None
 
     context = {
         'detecciones': detections,
         'total': total_detections,
         'organic_count': organic_count,
         'inorganic_count': inorganic_count,
+        'defective_count': defective_count,
+        'latest': latest_detection,
     }
     return render(request, 'detecciones/dashboard.html', context)
