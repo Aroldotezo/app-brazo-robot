@@ -194,6 +194,10 @@
 
                     <div id="video-hud"
                         class="absolute bottom-2 left-2 z-20 flex items-center gap-2 pointer-events-none">
+                        <span id="hud-live-tag"
+                            class="bg-rose-600/90 text-white px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider animate-pulse hidden">
+                            ● EN VIVO
+                        </span>
                         <span
                             class="bg-slate-950/80 backdrop-blur px-2 py-0.5 rounded border border-slate-800 text-[10px] font-mono text-slate-300">
                             CANAL: CAM_01
@@ -605,9 +609,14 @@
             };
 
             socket.onmessage = function (event) {
-                // Case A: Binary JPEG frame sent directly from OpenCV desktop client
+                // Case A: Binary JPEG frame
                 if (event.data instanceof Blob) {
                     handleBinaryFrame(event.data);
+                    return;
+                }
+                if (event.data instanceof ArrayBuffer) {
+                    const blob = new Blob([event.data], { type: 'image/jpeg' });
+                    handleBinaryFrame(blob);
                     return;
                 }
 
@@ -624,6 +633,8 @@
                 console.warn("[WebSocket] Conexión cerrada. Código:", event.code);
                 wsStatusText.textContent = "DESCONECTADO (REINTENTANDO)";
                 wsIndicatorDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+                const liveTag = document.getElementById('hud-live-tag');
+                if (liveTag) liveTag.classList.add('hidden');
                 clearInterval(fpsCalculatorTimer);
                 currentFps = 0.0;
                 fpsCounterBadge.textContent = "0.0 FPS";
@@ -650,23 +661,39 @@
          * Handle incoming JSON message
          */
         function handleJsonMessage(msg) {
+            if (!msg) return;
+
             // Heartbeat pong response
             if (msg.type === 'pong') {
                 const latency = Math.round(performance.now() - pingStartTime);
-                latencyDisplay.innerHTML = `Latencia de red: <strong class="text-emerald-400">${latency} ms</strong>`;
+                if (latencyDisplay) {
+                    latencyDisplay.innerHTML = `Latencia de red: <strong class="text-emerald-400">${latency} ms</strong>`;
+                }
                 Toast.info(`Ping recibido: ${latency} ms`, 2500);
                 return;
             }
 
-            // Video frame sent as base64 string
-            if (msg.type === 'frame' || msg.type === 'camera_frame') {
-                const frameSrc = msg.frame.startsWith('data:') ? msg.frame : `data:image/jpeg;base64,${msg.frame}`;
-                displayFrameUrl(frameSrc, false);
+            // Connection established confirmation
+            if (msg.type === 'connection_established') {
+                console.log("[WebSocket] Confirmación de canal:", msg);
                 return;
             }
 
-            // Real-time Detection Event (from desktop or API broadcast)
-            if (msg.type === 'detection') {
+            // Video frame sent as base64 string (supports 'video_frame', 'frame', 'camera_frame', etc.)
+            const frameTypes = ['video_frame', 'frame', 'camera_frame', 'stream_frame', 'camera_feed', 'image'];
+            if (frameTypes.includes(msg.type) || msg.frame || msg.image || msg.b64) {
+                const rawFrame = msg.frame || msg.image || msg.data || msg.b64;
+                if (rawFrame && typeof rawFrame === 'string') {
+                    const frameSrc = rawFrame.startsWith('data:')
+                        ? rawFrame
+                        : `data:image/jpeg;base64,${rawFrame}`;
+                    displayFrameUrl(frameSrc, false);
+                    return;
+                }
+            }
+
+            // Real-time Detection Event (from desktop client or REST API broadcast)
+            if (msg.type === 'detection' || msg.type === 'detection_event') {
                 const d = msg.data || msg;
                 handleNewDetectionReceived(d);
                 return;
@@ -682,21 +709,50 @@
          * Render video frame into image element
          */
         function displayFrameUrl(src, isBlob) {
-            if (standbyScreen && !standbyScreen.classList.contains('hidden')) {
+            if (standbyScreen) {
+                standbyScreen.style.setProperty('display', 'none', 'important');
                 standbyScreen.classList.add('hidden');
-                streamImg.classList.remove('hidden');
             }
 
-            const prevSrc = streamImg.src;
-            streamImg.src = src;
+            if (streamImg) {
+                streamImg.style.setProperty('display', 'block', 'important');
+                streamImg.classList.remove('hidden');
 
-            if (isBlob && prevSrc && prevSrc.startsWith('blob:')) {
-                URL.revokeObjectURL(prevSrc);
+                const prevSrc = streamImg.src;
+                streamImg.src = src;
+
+                if (isBlob && prevSrc && prevSrc.startsWith('blob:')) {
+                    URL.revokeObjectURL(prevSrc);
+                }
             }
 
             totalFramesReceived++;
             framesInLastSecond++;
-            hudFramesCount.textContent = `${totalFramesReceived} frames`;
+            if (hudFramesCount) {
+                hudFramesCount.textContent = `${totalFramesReceived} frames`;
+            }
+
+            if (wsStatusText && wsStatusText.textContent !== "STREAM EN VIVO") {
+                wsStatusText.textContent = "STREAM EN VIVO";
+                if (wsIndicatorDot) {
+                    wsIndicatorDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]";
+                }
+                const liveTag = document.getElementById('hud-live-tag');
+                if (liveTag) liveTag.classList.remove('hidden');
+            }
+
+            // Signal watchdog: revert status if no frames received within 4 seconds
+            clearTimeout(window._streamWatchdogTimer);
+            window._streamWatchdogTimer = setTimeout(() => {
+                if (wsStatusText && socket && socket.readyState === WebSocket.OPEN) {
+                    wsStatusText.textContent = "CANAL ABIERTO (EN REPOSO)";
+                    if (wsIndicatorDot) {
+                        wsIndicatorDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse";
+                    }
+                    const liveTag = document.getElementById('hud-live-tag');
+                    if (liveTag) liveTag.classList.add('hidden');
+                }
+            }, 4000);
         }
 
         /**

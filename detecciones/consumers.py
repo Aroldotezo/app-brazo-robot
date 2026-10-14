@@ -10,8 +10,8 @@ class CameraStreamConsumer(AsyncWebsocketConsumer):
     """
 
     async def connect(self):
-        # Extract camera_id from URL route or default to CAM_01
-        self.camera_id = self.scope['url_route']['kwargs'].get('camera_id', 'CAM_01')
+        # Extract camera_id from URL route or default to CAM_01 (normalized to uppercase)
+        self.camera_id = (self.scope['url_route']['kwargs'].get('camera_id') or 'CAM_01').upper()
         self.room_group_name = f"camera_{self.camera_id}"
         self.global_group_name = "camera_all"
 
@@ -77,7 +77,12 @@ class CameraStreamConsumer(AsyncWebsocketConsumer):
                 return
 
             # Camera video frame (base64 image or stream metadata)
-            if msg_type in ('frame', 'camera_frame'):
+            # Fully supports video_frame, frame, camera_frame and direct image payloads
+            if (
+                msg_type in ('video_frame', 'frame', 'camera_frame', 'stream_frame', 'camera_feed', 'image')
+                or 'frame' in payload
+                or 'image' in payload
+            ):
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
